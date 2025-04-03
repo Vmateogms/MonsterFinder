@@ -1,0 +1,12 @@
+<div class="map-container">
+    <div id="map" class="map"></div>
+
+    <app-addtienda></app-addtienda>
+  
+    @if (selectedTienda) {
+      <app-tienda-detail 
+        [tienda]="selectedTienda"
+        (closed)="handleClose()"
+      />
+    }
+  </div>

@@ -1,0 +1,31 @@
+
+.map-container {
+  height: calc(100vh - 20px);
+  width: calc(100% - 20px);
+  margin: 10px;
+  border: 1px solid #ccc; /* Para ver bordes */
+  position: relative;
+}
+  
+  .map {
+    height: 100%;
+    width: 100%;
+  }
+  
+  .info-window {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    min-width: 250px;
+    max-width: 350px;
+  }
+  
+  /* Fix para iconos de Leaflet */
+  .leaflet-marker-icon {
+    background-image: url('/assets/marker-icon.png') !important; /* Añade / al inicio */
+  }
+  
+  .leaflet-marker-shadow {
+    background-image: url('/assets/marker-shadow.png') !important; /* Añade / al inicio */
+  }

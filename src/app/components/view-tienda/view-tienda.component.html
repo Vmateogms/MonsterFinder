@@ -1,0 +1,36 @@
+@if (viewMode === 'view') {
+    <h3>Monsters en {{ tienda.nombre }}</h3>
+    <table>
+      @for (monsterInfo of tienda.monsters; track monsterInfo.monster.id) {
+        <tr>
+          <td>{{ monsterInfo.monster.nombre }}</td>
+          <td>{{ monsterInfo.precio }}€</td>
+        </tr>
+      }
+    </table>
+    <button (click)="switchToEditMode()">Editar</button>
+  }
+
+@if (viewMode === 'edit') {
+  <form [formGroup]="monsterEditForm">
+    @for (monster of allMonsters; track monster.id) {
+      <div class="monster-checkbox">
+        <input 
+          type="checkbox" 
+          [formControl]="getMonsterControl(monster)"
+        >
+        {{ monster.nombre }}
+        
+        @if (getMonsterControl(monster).value) {
+          <input 
+            type="number" 
+            [formControl]="getPriceControl(monster)"
+            placeholder="Precio"
+          >
+        }
+        </div>
+      }
+      <button (click)="saveMonsters()">Guardar</button>
+      <button (click)="cancelEdit()">Cancelar</button>
+    </form>
+  }
