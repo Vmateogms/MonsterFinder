@@ -39,8 +39,8 @@ nombre, sabor, descripción y precio.
 
 ## Problemas conocidos
 Durante el desarrollo de esta pagina se ha encontrado una serie de problemas, que se
-espera solventar en futuras actualizaciones: Spam de tiendas y mal uso de la edición
-de estas: Tanto lo que hace a la pagina escalable como lo que crea su mayor debilidad es
+espera solventar en futuras actualizaciones: **Spam de tiendas y mal uso de la edición
+de estas**: Tanto lo que hace a la pagina escalable como lo que crea su mayor debilidad es
 el mal uso intencionado de la creación de tiendas y modificación de los productos. La
 solución propuesta es crear usuarios con los que se registra su uso de la pagina, si un
 usuario, pongamos, crea 10 tiendas en fila en el mar, se podrá vetar la cuenta de este
