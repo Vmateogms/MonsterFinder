@@ -52,7 +52,7 @@ usuario y automáticamente borrar toda participación de esta en la pagina.
 
 **Futuras Updates**
 
-**Publicación:** 3-4 de abril  
+**Publicación:** 4 de abril  
 **Futuras Actualizaciones:** TBD  
 
 ---
