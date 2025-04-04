@@ -2,13 +2,14 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { ITienda } from '../interfaces/itienda';
+import { environment } from './environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TiendaService {
 
-  private apiUrl = 'http://localhost:9007/api/tiendas';
+private apiUrl = `${environment.apiUrl}/tiendas`;
 
   constructor(private http: HttpClient) { }
 

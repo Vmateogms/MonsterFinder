@@ -32,7 +32,7 @@ export class TiendaDetailComponent implements OnInit {
   ngOnInit() {
     //?this.monsterEditForm = this.fb.group({});
 
-    // Fetch all available monsters when the component initializes
+    // fetch todos los monters disponibles
     this.monsterService.getAllMonsters().subscribe({
       next: (monsters) => {
         this.allMonsters = monsters;
@@ -45,21 +45,21 @@ export class TiendaDetailComponent implements OnInit {
   }
 
   initForm() {
-    // Desuscribir cualquier suscripción anterior si existe
-    // Esto evitaría suscripciones múltiples
+    // desuscribir cualquier suscripción anterior si existe
+    // esto evitaría suscripciones múltiples
     
     const group: { [key: string]: FormControl } = {};
   
     this.allMonsters.forEach(monster => {
-      // Verificar que tienda.monsters existe antes de usarlo
+      // verificar que tienda.monsters existe antes de usarlo
       const isInStore = this.tienda.monsters && 
                         this.tienda.monsters.some(m => m.monster.id === monster.id);
       
-      // Control checkbox
+      // control checkbox
       const monsterControl = new FormControl(isInStore || false);
       group[`monster_${monster.id}`] = monsterControl;
   
-      // Control precio
+      // control precio
       const precioInicial = (isInStore && this.tienda.monsters) ? 
                             this.getExistingPrice(monster.id) : 
                             0;
@@ -69,7 +69,6 @@ export class TiendaDetailComponent implements OnInit {
       );
       group[`price_${monster.id}`] = priceControl;
   
-      // Habilitar o deshabilitar validación según el estado inicial
       if (isInStore) {
         priceControl.setValidators([Validators.required, Validators.min(0)]);
       }
@@ -77,7 +76,7 @@ export class TiendaDetailComponent implements OnInit {
   
     this.monsterEditForm = this.fb.group(group);
     
-    // Agregar suscripciones DESPUÉS de crear el formulario completo
+    // agregar suscripciones despues de crear el formulario completo
     this.allMonsters.forEach(monster => {
       const monsterControl = this.getMonsterControl(monster);
       const priceControl = this.getPriceControl(monster);
@@ -88,76 +87,26 @@ export class TiendaDetailComponent implements OnInit {
             priceControl.setValidators([Validators.required, Validators.min(0)]);
           } else {
             priceControl.clearValidators();
-            priceControl.setValue(null); // Limpiar valor cuando se desmarca
+            priceControl.setValue(null); // limpiar valor cuando se desmarca
           }
           priceControl.updateValueAndValidity();
         });
       }
     });
   }
-//   initForm() {
-//     const group: { [key: string]: FormControl } = {};
-    
-//     this.allMonsters.forEach(monster => {
-//         const isInStore = this.tienda.monsters?.some(m => m.monster.id === monster.id);
-        
-//         group[`monster_${monster.id}`] = new FormControl(isInStore);
-//         group[`price_${monster.id}`] = new FormControl(
-//             isInStore ? this.getExistingPrice(monster.id) : '', 
-//             [Validators.min(0)] // Validator.required se añade dinámicamente
-//         );
-      
-//         // Suscripción a cambios en el checkbox
-//         this.getMonsterControl(monster).valueChanges.subscribe(checked => {
-//             const priceControl = this.getPriceControl(monster);
-//             if (checked) {
-//                 priceControl.setValidators([Validators.required, Validators.min(0)]);
-//             } else {
-//                 priceControl.clearValidators();
-//             }
-//             priceControl.updateValueAndValidity();
-//         });
-//     });
-    
-//     this.monsterEditForm = this.fb.group(group);
-// }
 
-  // // Initialize the form with dynamic form controls
-  // initForm() {
-  //   // Create an object to hold form controls dynamically
-  //   const group: { [key: string]: FormControl } = {};
-    
-  //   // For each available monster, create form controls
-  //   this.allMonsters.forEach(monster => {
-  //     // Check if this monster is already in the store
-  //     const isInStore = this.tienda.monsters.some(m => m.monster.id === monster.id);
-  //     // Create a checkbox control for monster selection
-  //     group[`monster_${monster.id}`] = new FormControl(isInStore);
-      
-  //     // Create a price control for the monster
-  //     group[`price_${monster.id}`] = new FormControl(
-  //       isInStore ? this.getExistingPrice(monster.id) : '', 
-  //       [Validators.min(0), Validators.required]
-  //     );
-  //   });
-
-  //   // Create the form group with all dynamic controls
-  //   this.monsterEditForm = this.fb.group(group);
-    
-  // }
-
-  // Helper method to get existing price for a monster in this store
+  // metodo para conseguir un precio ya existente
   getExistingPrice(monsterId: number): number {
     const existingMonster = this.tienda.monsters.find(m => m.monster.id === monsterId);
     return existingMonster ? existingMonster.precio : 0;
   }
 
-  // Get the checkbox control for a specific monster
+  // control del checkbox
   getMonsterControl(monster: IMonster): FormControl {
     return this.monsterEditForm.get(`monster_${monster.id}`) as FormControl;
   }
 
-  // Get the price control for a specific monster
+
   getPriceControl(monster: IMonster): FormControl {
     return this.monsterEditForm.get(`price_${monster.id}`) as FormControl;
   }
@@ -166,7 +115,7 @@ export class TiendaDetailComponent implements OnInit {
     return this.monsterEditForm.get(`present_${monster.id}`) as FormControl;
   }
 
-  // Save the updated monsters for this store
+  // Guardar los monstersa actualizados para la tienda
   saveMonsters() {
     // Validar el formulario
     if (this.monsterEditForm.invalid) {
@@ -196,20 +145,20 @@ export class TiendaDetailComponent implements OnInit {
   
     console.log('Datos a enviar al servidor:', updates);
   
-    // Verificar que hay datos a enviar
+    // berificar que hay datos a enviar
     if (updates.length === 0) {
       console.log('No hay monsters seleccionados para actualizar');
       this.viewMode = 'view';
       return;
     }
   
-    // Enviar actualización al backend
+    // enviar actualización al backend
     this.tiendaMonsterService.updateTiendaMonsters(this.tienda.id, updates)
       .subscribe({
         next: (updatedTienda) => {
           this.tienda = updatedTienda || this.tienda;
           this.viewMode = 'view';
-          this.reloadTiendaData(); // Forzar recarga
+          this.reloadTiendaData(); // forzar recarga
           console.log('Actualizado correctamente');
         },
         error: (err) => {
@@ -230,7 +179,7 @@ export class TiendaDetailComponent implements OnInit {
   }
 
 
-  // Switch to edit mode
+  // cambiar a modo edicion
   switchToEditMode() {
     this.viewMode = 'edit';
   }
@@ -239,14 +188,14 @@ export class TiendaDetailComponent implements OnInit {
     this.viewMode = 'watch';
   }
 
-  // Cancel editing and return to view mode
+  // cancelar el modo edicion y voler a vista 
   cancelEdit() {
     this.viewMode = 'view';
-    // Optionally reset the form to original state
+    // opcionalmente resestear el form 
     this.initForm();
   }
 
-  // Close the entire detail view
+  //cerrar el ver detalle entero
   close() {
     this.closed.emit();
   }

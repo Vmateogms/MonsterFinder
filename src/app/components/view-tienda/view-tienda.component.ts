@@ -41,10 +41,10 @@ export class ViewTiendaComponent implements OnInit{
     const group: { [key: string]: FormControl } = {};
     
     this.allMonsters.forEach(monster => {
-      // Check if the monster is already in the store
+      // comprobar si la monster esta ya en la tienda
       const isInStore = this.tienda.monsters.some(m => m.monster.id === monster.id);
       
-      // Create form controls with type safety
+      // crear un nuevo form
       group[`monster_${monster.id}`] = new FormControl(isInStore);
       group[`price_${monster.id}`] = new FormControl(
         isInStore ? this.getExistingPrice(monster.id) : '', 
@@ -61,12 +61,12 @@ export class ViewTiendaComponent implements OnInit{
   }
 
   getMonsterControl(monster: IMonster): FormControl {
-    // Non-null assertion to handle type safety
+    
     return this.monsterEditForm.get(`monster_${monster.id}`) as FormControl;
   }
 
   getPriceControl(monster: IMonster): FormControl {
-    // Non-null assertion to handle type safety
+    
     return this.monsterEditForm.get(`price_${monster.id}`) as FormControl;
   }
 
@@ -82,7 +82,6 @@ export class ViewTiendaComponent implements OnInit{
       .subscribe({
         next: () => {
           this.viewMode = 'view';
-          // Optionally reload or update the tienda data
         },
         error: (err) => {
           console.error('Error updating monsters', err);

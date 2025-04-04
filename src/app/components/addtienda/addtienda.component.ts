@@ -46,7 +46,7 @@ export class AddtiendaComponent {
       this.tService.addTienda(payload).subscribe({
         next: (response) => {
           console.log('Store added successfully', response);
-          // Close modal logic
+          // cerrar la logica del modal
           const modalElement = document.getElementById('addStoreModal');
           const modalBackdrop = document.querySelector('.modal-backdrop');
           

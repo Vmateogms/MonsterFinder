@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { IMonster } from '../interfaces/imonster';
 import { HttpClient } from '@angular/common/http';
+import { environment } from './environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MonsterService {
 
-  private apiUrl = 'http://localhost:9007/api/monsters';
+private apiUrl = `${environment.apiUrl}/monsters`;
 
   constructor(private http: HttpClient) { }
 
