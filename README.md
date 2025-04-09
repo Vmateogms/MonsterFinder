@@ -1,6 +1,9 @@
 # MonsterFinder
 URL = (https://monsterfinder.vmateogm.com/) 
 
+
+<img src="resourcesGit/monstermapa.png" width="25%" />
+
 ## Introducción
 MonsterFinder es una webapp diseñada por V.Mateo GM, como proyecto para solventar el
 problema económico que genera la adicción a las energéticas en su grupo de amigos. En
@@ -48,7 +51,7 @@ usuario, pongamos, crea 10 tiendas en fila en el mar, se podrá vetar la cuenta 
 usuario y automáticamente borrar toda participación de esta en la pagina.
 
 
-<img src="resourcesGit/monstermapa.png" width="50%" />
+<img src="resourcesGit/monsteramistad.png" width="25%" />
 
 **Futuras Updates**
 
