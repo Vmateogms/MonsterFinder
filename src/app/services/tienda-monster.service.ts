@@ -42,12 +42,14 @@ private apiUrl = `${environment.apiUrl}/tienda-monsters`;
     // asegurar que los datos tienen el formato correcto
     const formattedUpdates = updates.map(update => ({
       monsterId: update.monsterId,
-      precio: update.precio
+      precio: update.precio,
+      descuento: update.descuento || false,
+      precioDescuento: update.descuento ? update.precioDescuento : null
     }));
   
     console.log('Datos enviados:', JSON.stringify(formattedUpdates));
   
-    return this.http.post(`${this.apiUrl}/${tiendaId}/update`, formattedUpdates)
+    return this.http.post<any>(`${this.apiUrl}/${tiendaId}/update`, formattedUpdates)
       .pipe(
         catchError(error => {
           console.error('Error en la petición:', error);

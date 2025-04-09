@@ -48,6 +48,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
   }
 
   private cargarTiendas(): void {
+    console.log('Inicializando mapa...');
     this.tiendaService.getTiendas()
           .pipe(
             catchError(error => {
@@ -56,12 +57,14 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
             })
           )
           .subscribe((tiendas: ITienda[]) => {
+            console.log('Tiendas recibidas:', tiendas);
             this.tiendas = tiendas;
             this.addMarkers();
           });
   }
 
   private initMap(): void {
+    console.log('Inicializando mapa con', this.tiendas.length, 'tiendas');
     this.map = map('map', {
       center: this.initialCoords,
       zoom: this.initialZoom
@@ -106,6 +109,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
   }
 
   showTiendaInfo(tienda: ITienda): void {
+    console.log('Marcador de tienda clickeado:', tienda);
     this.selectedTienda = tienda;
     this.map.getContainer().style.cursor = 'pointer';
   }
@@ -119,7 +123,8 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     this.selectedTienda = null;
   }
 
-  onMapClick(event: LeafletMouseEvent) {
+  onMapClick(event: LeafletMouseEvent, tienda: ITienda) {
+    console.log('Tienda seleccionada:', tienda);
     this.addStoreForm.patchValue({
       latitud: event.latlng.lat,
       longitud: event.latlng.lng

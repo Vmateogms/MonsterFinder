@@ -10,7 +10,7 @@ import { TiendaService } from '../../services/tienda.service';
 @Component({
   selector: 'app-tienda-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule ],
   templateUrl: './tienda-detail.component.html',
   styleUrl: './tienda-detail.component.css'
 })
@@ -21,7 +21,8 @@ export class TiendaDetailComponent implements OnInit {
   viewMode: 'view' | 'edit' | 'watch' = 'view';
   allMonsters: IMonster[] = [];
   monsterEditForm!: FormGroup;
-
+  isFormSubmitted = false;
+  
   constructor(
     private monsterService: MonsterService,
     private tiendaMonsterService: TiendaMonsterService,
@@ -30,8 +31,6 @@ export class TiendaDetailComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    //?this.monsterEditForm = this.fb.group({});
-
     // fetch todos los monters disponibles
     this.monsterService.getAllMonsters().subscribe({
       next: (monsters) => {
@@ -59,7 +58,7 @@ export class TiendaDetailComponent implements OnInit {
       const monsterControl = new FormControl(isInStore || false);
       group[`monster_${monster.id}`] = monsterControl;
   
-      // control precio
+      // control precio normal
       const precioInicial = (isInStore && this.tienda.monsters) ? 
                             this.getExistingPrice(monster.id) : 
                             0;
@@ -68,6 +67,23 @@ export class TiendaDetailComponent implements OnInit {
         [Validators.min(0)]
       );
       group[`price_${monster.id}`] = priceControl;
+      
+      // control descuento checkbox
+      const hasDiscountInitial = (isInStore && this.tienda.monsters) ?
+                                this.getExistingDiscount(monster.id) :
+                                false;
+      const discountControl = new FormControl(hasDiscountInitial);
+      group[`discount_${monster.id}`] = discountControl;
+      
+      // control precio con descuento (NUEVO)
+      const discountPriceInitial = (isInStore && this.tienda.monsters) ?
+                                  this.getExistingDiscountPrice(monster.id) :
+                                  0;
+      const discountPriceControl = new FormControl(
+        discountPriceInitial,
+        [Validators.min(0)]
+      );
+      group[`discount_price_${monster.id}`] = discountPriceControl;
   
       if (isInStore) {
         priceControl.setValidators([Validators.required, Validators.min(0)]);
@@ -80,6 +96,8 @@ export class TiendaDetailComponent implements OnInit {
     this.allMonsters.forEach(monster => {
       const monsterControl = this.getMonsterControl(monster);
       const priceControl = this.getPriceControl(monster);
+      const discountControl = this.getDiscountControl(monster);
+      const discountPriceControl = this.getDiscountPriceControl(monster);
       
       if (monsterControl && priceControl) {
         monsterControl.valueChanges.subscribe(checked => {
@@ -88,8 +106,23 @@ export class TiendaDetailComponent implements OnInit {
           } else {
             priceControl.clearValidators();
             priceControl.setValue(null); // limpiar valor cuando se desmarca
+            discountControl.setValue(false); // resetear descuento también
+            discountPriceControl.setValue(null); // resetear precio con descuento
           }
           priceControl.updateValueAndValidity();
+        });
+      }
+      
+      // Suscripción para habilitar/deshabilitar el campo de precio con descuento
+      if (discountControl && discountPriceControl) {
+        discountControl.valueChanges.subscribe(hasDiscount => {
+          if (hasDiscount) {
+            discountPriceControl.setValidators([Validators.required, Validators.min(0)]);
+          } else {
+            discountPriceControl.clearValidators();
+            discountPriceControl.setValue(null);
+          }
+          discountPriceControl.updateValueAndValidity();
         });
       }
     });
@@ -100,19 +133,36 @@ export class TiendaDetailComponent implements OnInit {
     const existingMonster = this.tienda.monsters.find(m => m.monster.id === monsterId);
     return existingMonster ? existingMonster.precio : 0;
   }
+  
+  // método para obtener el valor de descuento existente
+  getExistingDiscount(monsterId: number): boolean {
+    const existingMonster = this.tienda.monsters.find(m => m.monster.id === monsterId);
+    return existingMonster ? (existingMonster.descuento || false) : false;
+  }
+  
+  // método para obtener el precio con descuento existente (NUEVO)
+  getExistingDiscountPrice(monsterId: number): number {
+    const existingMonster = this.tienda.monsters.find(m => m.monster.id === monsterId);
+    return existingMonster && existingMonster.precioDescuento ? existingMonster.precioDescuento : 0;
+  }
 
   // control del checkbox
   getMonsterControl(monster: IMonster): FormControl {
     return this.monsterEditForm.get(`monster_${monster.id}`) as FormControl;
   }
 
-
   getPriceControl(monster: IMonster): FormControl {
     return this.monsterEditForm.get(`price_${monster.id}`) as FormControl;
   }
-
-  getPresenceControl(monster: IMonster): FormControl {
-    return this.monsterEditForm.get(`present_${monster.id}`) as FormControl;
+  
+  // obtener control de descuento
+  getDiscountControl(monster: IMonster): FormControl {
+    return this.monsterEditForm.get(`discount_${monster.id}`) as FormControl;
+  }
+  
+  // obtener control de precio con descuento (NUEVO)
+  getDiscountPriceControl(monster: IMonster): FormControl {
+    return this.monsterEditForm.get(`discount_price_${monster.id}`) as FormControl;
   }
 
   // Guardar los monstersa actualizados para la tienda
@@ -136,16 +186,35 @@ export class TiendaDetailComponent implements OnInit {
         const priceValue = this.getPriceControl(monster)?.value;
         const precio = priceValue !== null && priceValue !== undefined ? 
                       Number(priceValue) : 0;
+        
+        const descuento = this.getDiscountControl(monster)?.value || false;
+        
+        //el problema esta aqui
+        let precioDescuento: number | null = null;
+        if (descuento) {
+          const discountPriceValue = this.getDiscountPriceControl(monster)?.value;
+          if (discountPriceValue !== null && discountPriceValue !== undefined) {
+            precioDescuento = Number(discountPriceValue);
+          }
+        }
+
+        // if (descuento) {
+        //   const discountPriceValue = this.getDiscountPriceControl(monster)?.value;
+        //   precioDescuento = discountPriceValue !== null && discountPriceValue !== undefined ?
+        //             Number(discountPriceValue) : null; 
+        // }
                       
         return {
           monsterId: monster.id,
-          precio: precio
+          precio: precio,
+          descuento: descuento,
+          precioDescuento: precioDescuento  
         };
       });
+      console.log('Updates completos antes de enviar:', JSON.stringify(updates));
+    
   
-    console.log('Datos a enviar al servidor:', updates);
-  
-    // berificar que hay datos a enviar
+    // verificar que hay datos a enviar
     if (updates.length === 0) {
       console.log('No hay monsters seleccionados para actualizar');
       this.viewMode = 'view';
@@ -156,6 +225,7 @@ export class TiendaDetailComponent implements OnInit {
     this.tiendaMonsterService.updateTiendaMonsters(this.tienda.id, updates)
       .subscribe({
         next: (updatedTienda) => {
+          console.log('Tienda actualizada recibida del servidor:', JSON.stringify(updatedTienda));
           this.tienda = updatedTienda || this.tienda;
           this.viewMode = 'view';
           this.reloadTiendaData(); // forzar recarga
@@ -178,7 +248,6 @@ export class TiendaDetailComponent implements OnInit {
       });
   }
 
-
   // cambiar a modo edicion
   switchToEditMode() {
     this.viewMode = 'edit';
@@ -192,6 +261,7 @@ export class TiendaDetailComponent implements OnInit {
   cancelEdit() {
     this.viewMode = 'view';
     // opcionalmente resestear el form 
+    this.isFormSubmitted = false;
     this.initForm();
   }
 
@@ -202,8 +272,16 @@ export class TiendaDetailComponent implements OnInit {
 
   reloadTiendaData() {
     this.tiendaService.getTiendaById(this.tienda.id).subscribe({
-      next: (updateTienda) => {
-        this.tienda = updateTienda;
+      next: (updatedTienda) => {
+        console.log('Updated tienda full data:', JSON.stringify(updatedTienda));
+        console.log('Monster data samples:', updatedTienda.monsters.map(m => ({
+          id: m.monster.id,
+          name: m.monster.nombre,
+          precio: m.precio,
+          descuento: m.descuento,
+          precioDescuento: m.precioDescuento
+        })));
+        this.tienda = updatedTienda;
         this.initForm();
       },
       error: (err) => {
@@ -211,5 +289,4 @@ export class TiendaDetailComponent implements OnInit {
       }
     });
   }
-
 }

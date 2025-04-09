@@ -7,7 +7,15 @@ export interface ITienda {
     latitud: number;
     longitud: number;
     monsters: {
-        monster: IMonster;
-        precio: number;
+        monster: {
+        id: number;
+        nombre: string;
+        descripcion: string;
+        sabor: string;
+        imagenUrl: string;
+    };
+    precio: number;
+    descuento?: boolean;
+    precioDescuento?: number;
     }[];
 }

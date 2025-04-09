@@ -38,6 +38,12 @@ export class ViewTiendaComponent implements OnInit{
   }
 
   initForm() {
+
+    if (!this.tienda?.monsters) { 
+      console.error('Tienda or monsters is undefined');
+      return;
+    }
+
     const group: { [key: string]: FormControl } = {};
     
     this.allMonsters.forEach(monster => {

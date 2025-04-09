@@ -122,3 +122,182 @@
   border: 1px solid #ccc;
   margin-bottom: 5px;
 }
+
+.discount-price {
+  color: #d9534f;
+  font-weight: bold;
+  text-decoration: none;  /* Podría añadir line-through si quisieras mostrar que es un descuento */
+}
+
+.discount-badge {
+  background-color: #d9534f;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  margin-left: 6px;
+}
+
+.discount-control {
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.discount-control input {
+  margin-right: 5px;
+}
+
+.discount-price-yellow {
+  color: #ffc107;  /* Amarillo */
+  font-weight: bold;
+}
+
+.discount-price-field {
+  background-color: #fff3cd;  /* Fondo amarillo claro para el campo */
+  border-color: #ffc107;
+}
+
+.discount-badge {
+  background-color: #d9534f;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  margin-left: 6px;
+}
+
+.discount-control {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+}
+
+.discount-control input {
+  margin-right: 5px;
+}
+
+.original-price {
+  text-decoration: line-through;
+  color: #6c757d;
+}
+
+.price-controls {
+  display: flex;
+  flex-direction: column;
+  margin-left: 15px;
+}
+
+.input-group {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.input-group label {
+  margin-right: 8px;
+  min-width: 70px;
+}
+
+.discount-price-input {
+  padding-left: 20px;
+  margin-top: 5px;
+  border-left: 2px solid #ffc107;
+}
+
+.monster-edit-item {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.monster-edit-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.monster-edit-item img {
+  width: 50px;
+  height: 50px;
+  margin: 0 10px;
+  object-fit: contain;
+}
+
+.price-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-left: 20px;
+}
+
+.input-group {
+  margin-right: 15px;
+  margin-bottom: 5px;
+}
+
+.discount-control {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
+}
+
+.discount-price-input {
+  margin-top: 5px;
+}
+
+.error-message {
+  color: red;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.edit-actions {
+  margin-top: 20px;
+  text-align: right;
+}
+
+/* View mode styles */
+.monsters-list {
+  margin-bottom: 20px;
+}
+
+.monster-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.monster-item img {
+  width: 50px;
+  height: 50px;
+  margin-right: 15px;
+  object-fit: contain;
+}
+
+.original-price {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.discount-price-yellow {
+  color: #FFD700; 
+  font-weight: bold;
+}
+
+.discount-badge {
+  background-color: #FFD700;
+  color: #333;
+  font-size: 0.8em;
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-left: 5px;
+}
+
+.actions {
+  margin-top: 20px;
+}
