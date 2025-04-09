@@ -48,7 +48,7 @@ usuario, pongamos, crea 10 tiendas en fila en el mar, se podrá vetar la cuenta 
 usuario y automáticamente borrar toda participación de esta en la pagina.
 
 
-[Ejemplo de imagen](resourcesGit/monsteramigos.png)
+[Imagen](resourcesGit/monsteramigos.png)
 
 **Futuras Updates**
 
