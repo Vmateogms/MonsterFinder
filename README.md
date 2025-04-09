@@ -65,11 +65,13 @@ usuario y automáticamente borrar toda participación de esta en la pagina.
 - Filtros por rango de productos  
 - Más Productos  
 - Productos del tiempo o fríos
-- Usuarios 
+- Usuarios
+   
 
 ---
 
 **Mayo-Junio**  
+- Web Scraping para obtener productos live
 - Mejorar estética  
 - Fotos de los productos mejores  
 - Optimización  
