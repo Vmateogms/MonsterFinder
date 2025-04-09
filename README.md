@@ -64,7 +64,8 @@ usuario y automáticamente borrar toda participación de esta en la pagina.
 - Añadir Geolocalización  
 - Filtros por rango de productos  
 - Más Productos  
-- Productos del tiempo o fríos  
+- Productos del tiempo o fríos
+- Usuarios 
 
 ---
 
@@ -73,7 +74,7 @@ usuario y automáticamente borrar toda participación de esta en la pagina.
 - Fotos de los productos mejores  
 - Optimización  
 - Seguridad  
-- Usuarios  
+ 
 
 ---
 
