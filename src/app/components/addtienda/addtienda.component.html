@@ -1,0 +1,37 @@
+<!-- Botón para abrir el modal -->
+<button class="btn btn-danger mapa-button" data-bs-toggle="modal" data-bs-target="#addStoreModal">
+    Añadir tienda
+  </button>
+  
+  <!-- Modal de Bootstrap -->
+  <div class="modal fade" id="addStoreModal" tabindex="-1" aria-labelledby="addStoreLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addStoreLabel">Nueva Tienda</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form [formGroup]="addStoreForm" (ngSubmit)="onSubmit()">
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input formControlName="nombre" class="form-control" placeholder="Nombre..." required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Latitud</label>
+              <input formControlName="latitud" type="number" class="form-control" placeholder="Latitud..." required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Longitud</label>
+              <input formControlName="longitud" type="number" class="form-control" placeholder="Longitud..." required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">URL de imagen</label>
+              <input formControlName="imagenUrl" class="form-control" placeholder="URL de imagen...">
+            </div>
+            <button type="submit" class="btn btn-primary">Añadir</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>

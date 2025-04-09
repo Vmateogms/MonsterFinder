@@ -1,0 +1,144 @@
+<div class="modal-overlay">
+  <div class="modal-content">
+    <h2>{{ tienda.nombre }}</h2>
+    
+    <!-- View Mode -->
+    @if (viewMode === 'view') {
+      <div class="monsters-list">
+        @for (monsterItem of tienda.monsters; track monsterItem.monster.id) {
+          <div class="monster-item">
+            <img [src]="monsterItem.monster.imagenUrl" alt="{{ monsterItem.monster.nombre }}">
+            <div>
+              <strong>{{ monsterItem.monster.nombre }}</strong>
+              @if (monsterItem.descuento && monsterItem.precioDescuento) {
+                <p>
+                  Precio original: <span class="original-price">{{ monsterItem.precio }}€</span>
+                  <br>
+                  Precio oferta: <span class="discount-price-yellow">{{ monsterItem.precioDescuento }}€</span>
+                  <span class="discount-badge">¡EN OFERTA!</span>
+                </p>
+              } @else {
+                <p>Precio: {{ monsterItem.precio }}€</p>
+              }
+            </div>
+          </div>
+        }
+      </div>
+      <div class="actions">
+        <button class="btn btn-warning m-2" (click)="switchToEditMode()">Editar Monsters</button>
+        <button class="btn btn-warning m-2" (click)="switchToWatchMode()">Ver Monsters</button>
+        <button class="btn btn-primary m-2" (click)="close()">Cerrar</button>
+      </div>
+    }
+    
+    <!-- Edit Mode -->
+    @if (viewMode === 'edit' && monsterEditForm) {
+      <form [formGroup]="monsterEditForm">
+        @for (monster of allMonsters; track monster.id) {
+          <div class="monster-edit-item">
+            <input 
+              type="checkbox" 
+              [formControl]="getMonsterControl(monster)"
+            >
+            <img [src]="monster.imagenUrl" alt="{{ monster.nombre }}">
+            <span>{{ monster.nombre }}</span>
+            
+            @if (getMonsterControl(monster).value) {
+              <div class="price-controls">
+                <!-- Precio normal -->
+                <div class="input-group">
+                  <label for="price_{{monster.id}}">Precio:</label>
+                  <input 
+                    type="number" 
+                    [formControl]="getPriceControl(monster)" 
+                    placeholder="Precio"
+                    id="price_{{monster.id}}"
+                  >
+                  @if (getPriceControl(monster).invalid && 
+                      (getPriceControl(monster).touched || 
+                       getPriceControl(monster).dirty)) {
+                    <div class="error-message">
+                      Precio requerido y mayor o igual a 0
+                    </div>
+                  }
+                </div>
+                
+                <!-- Checkbox para descuento -->
+                <div class="discount-control">
+                  <input 
+                    type="checkbox" 
+                    [formControl]="getDiscountControl(monster)"
+                    id="discount_{{monster.id}}"
+                  >
+                  <label for="discount_{{monster.id}}">Con descuento</label>
+                </div>
+                
+                <!-- Precio con descuento (opcional) -->
+                @if (getDiscountControl(monster).value) {
+                  <div class="input-group discount-price-input">
+                    <label for="discount_price_{{monster.id}}">Precio con descuento:</label>
+                    <input 
+                      type="number" 
+                      [formControl]="getDiscountPriceControl(monster)" 
+                      placeholder="Precio con descuento"
+                      id="discount_price_{{monster.id}}"
+                      class="discount-price-field"
+                    >
+                    @if (getDiscountPriceControl(monster).invalid && 
+                        (getDiscountPriceControl(monster).touched || 
+                         getDiscountPriceControl(monster).dirty)) {
+                      <div class="error-message">
+                        Precio con descuento requerido y mayor o igual a 0
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+        <div class="edit-actions">
+          <button class="btn btn-secondary" (click)="saveMonsters()">Guardar</button>
+          <button class="btn btn-secondary m-2" (click)="cancelEdit()">Cancelar</button>
+        </div>
+      </form>
+    }
+    
+    <!-- Watch Mode-->
+    @if(viewMode === 'watch') {
+      <div>
+        <h3>Estos son los monster energy en {{ tienda.nombre }}</h3>
+        <div class="row">
+          @for (monsterItem of tienda.monsters; track monsterItem.monster.id) {
+            <div class="col-md-4 mb-3">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">{{ monsterItem.monster.nombre}}</h5>
+                  <p class="card-text">Sabor: {{ monsterItem.monster.sabor}}</p>
+                  
+                  @if (monsterItem.descuento && monsterItem.precioDescuento) {
+                    <p class="card-text">
+                      Precio original: <span class="text-muted text-decoration-line-through">{{monsterItem.precio}}€</span>
+                      <br>
+                      Precio oferta: <span class="text-warning fw-bold">{{monsterItem.precioDescuento}}€</span>
+                      <span class="badge bg-warning text-dark ms-2">OFERTA</span>
+                    </p>
+                  } @else {
+                    <p class="card-text">Precio: <strong>{{monsterItem.precio}}€</strong></p>
+                  }
+                  
+                  <p class="card-text">{{ monsterItem.monster.descripcion}}</p>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="mt-3">  
+          <button class="btn btn-secondary me-2" (click)="switchToEditMode()">Editar Monster</button>
+          <button class="btn btn-secondary me-2" (click)="viewMode = 'view'">Vista Simple</button>
+          <button class="btn btn-danger" (click)="close()">Cerrar</button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
