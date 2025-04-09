@@ -47,7 +47,7 @@ solución propuesta es crear usuarios con los que se registra su uso de la pagin
 usuario, pongamos, crea 10 tiendas en fila en el mar, se podrá vetar la cuenta de este
 usuario y automáticamente borrar toda participación de esta en la pagina.
 
-
+![Ejemplo de imagen](resourcesGit/monsteramigos.png)
 
 
 **Futuras Updates**
