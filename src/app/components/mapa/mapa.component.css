@@ -29,3 +29,327 @@
   .leaflet-marker-shadow {
     background-image: url('/assets/marker-shadow.png') !important;
   }
+
+  @keyframes pulse {
+    0% {
+      transform: translate(-50%, -50%) scale(0.5);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1.5);
+      opacity: 0;
+    }
+  }
+  
+  .locate-button {
+    background-color: white;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    border-radius: 4px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  }
+  
+  .locate-button:hover {
+    background-color: #f4f4f4;
+  }
+  
+  .distance-badge {
+    background-color: #4285F4;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-size: 12px;
+    margin-left: 5px;
+  }
+
+
+.nearest-stores-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: white;
+  border-radius: 4px;
+  padding: 10px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  max-width: 250px;
+  z-index: 1000;
+}
+
+.nearest-stores-panel h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.nearest-stores-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.store-item {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.store-item:last-child {
+  border-bottom: none;
+}
+
+.store-item:hover {
+  background-color: #f4f4f4;
+}
+
+.store-name {
+  font-weight: 500;
+}
+
+
+
+
+
+nuevo
+
+/* Agregar a mapa.component.css */
+
+.map-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+.nearest-stores-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  padding: 10px;
+  max-width: 300px;
+  z-index: 1000;
+}
+
+.nearest-stores-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.store-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.store-item:hover {
+  background-color: #f5f5f5;
+}
+
+.store-name {
+  font-weight: bold;
+}
+
+.distance-badge {
+  background-color: #4285F4;
+  color: white;
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 0.8em;
+}
+
+.user-location-marker {
+  position: relative;
+}
+
+.user-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #4285F4;
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.5); 
+}
+
+.user-pulse {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(66, 133, 244, 0.4);
+  border: 3px solid rgba(66, 133, 244, 0.7);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Estilos para el filtro de monstruos */
+.filter-container {
+  position: absolute;
+  top: 60px;
+  left: 10px;
+  z-index: 1000;
+  max-width: 300px;
+}
+
+.btn-filter-toggle {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+}
+
+.btn-filter-toggle:hover {
+  background-color: #f5f5f5;
+}
+
+.filter-panel {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  margin-top: 10px;
+  padding: 15px;
+  display: none;
+}
+
+.filter-panel.is-visible {
+  display: block;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.btn-primary {
+  background-color: #4285F4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background-color: #357ae8;
+}
+
+.results-panel {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  margin-top: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.btn-close-results {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.monster-card {
+  border-bottom: 1px solid #eee;
+  padding: 10px 15px;
+  cursor: pointer;
+}
+
+.monster-card:hover {
+  background-color: #f5f5f5;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  background-color: #4285F4;
+  color: white;
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 0.8em;
+}
+
+.price {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #4285F4;
+}
+
+.store {
+  font-size: 0.9em;
+  color: #666;
+}
+</antArt

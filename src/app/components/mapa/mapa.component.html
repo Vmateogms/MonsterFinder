@@ -1,12 +1,26 @@
 <div class="map-container">
-    <div id="map" class="map">
+  <div id="map" class="map">
     <app-addtienda></app-addtienda>
   </div>
 
-    @if (selectedTienda) {
-      <app-tienda-detail 
-        [tienda]="selectedTienda"
-        (closed)="handleClose()"
-      />
-    }
-  </div>
+  @if (selectedTienda) {
+    <app-tienda-detail 
+      [tienda]="selectedTienda"
+      (closed)="handleClose()"
+    />
+  }
+
+  @if (userLocation && nearestStores.length > 0) {
+    <div class="nearest-stores-panel">
+      <h3>Tiendas cercanas</h3>
+      <div class="nearest-stores-list">
+        @for (tienda of nearestStores.slice(0, 5); track tienda.id) {
+          <div class="store-item" (click)="showTiendaInfo(tienda)">
+            <span class="store-name">{{ tienda.nombre }}</span>
+            <span class="distance-badge">{{ (tienda as any).distance }} km</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
