@@ -33,9 +33,22 @@ private apiUrl = `${environment.apiUrl}/tienda-monsters`;
     const url = `${this.apiUrl}/tiendas/${tiendaId}`;
     return this.http.get<ITienda>(url);
   }
+
+
   updateTiendaMonsters(tiendaId: number, updates: any[]): Observable<any> {
+    
+    //validar tienda id
+    if (!tiendaId || tiendaId <= 0) {
+      return throwError(() => new Error('El ID de la tienda es invalido'))
+    }
+    
+    const actualizacionValida = updates.filter(update => 
+      update && typeof update.monsterId === 'number' &&
+      typeof update.precio === 'number'
+    );
+
     // verificar que los datos son validos
-    if (!updates || updates.length === 0) {
+    if (actualizacionValida.length === 0) {
       return throwError(() => new Error('No hay datos para actualizar'));
     }
   

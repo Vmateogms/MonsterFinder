@@ -6,6 +6,7 @@ export interface ITienda {
     nombre: string;
     latitud: number;
     longitud: number;
+    distance?: number;
     monsters: {
         monster: {
         id: number;
@@ -17,5 +18,6 @@ export interface ITienda {
     precio: number;
     descuento?: boolean;
     precioDescuento?: number;
+   
     }[];
 }

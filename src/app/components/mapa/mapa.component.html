@@ -7,9 +7,10 @@
     <app-tienda-detail 
       [tienda]="selectedTienda"
       (closed)="handleClose()"
-    />
+    /> 
   }
-
+  
+ 
   @if (userLocation && nearestStores.length > 0) {
     <div class="nearest-stores-panel">
       <h3>Tiendas cercanas</h3>
@@ -17,7 +18,7 @@
         @for (tienda of nearestStores.slice(0, 5); track tienda.id) {
           <div class="store-item" (click)="showTiendaInfo(tienda)">
             <span class="store-name">{{ tienda.nombre }}</span>
-            <span class="distance-badge">{{ (tienda as any).distance }} km</span>
+            <span class="distance-badge">{{  tienda.distance  }} km</span>
           </div>
         }
       </div>

@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { map, Observable, tap } from 'rxjs';
+import { map, Observable, of, tap } from 'rxjs';
 import { ITienda } from '../interfaces/itienda';
 import { environment } from './environment.prod';
 
@@ -10,11 +10,23 @@ import { environment } from './environment.prod';
 export class TiendaService {
 
 private apiUrl = `${environment.apiUrl}/tiendas`;
-
+private tiendaCache: ITienda[] = [];
+private lastFetchTime: number = 0;
+private readonly CACHE_DURATION = 5 * 60 * 1000 //5 minutos 
+ 
   constructor(private http: HttpClient) { }
 
 
   getTiendas(): Observable<ITienda[]> {
+    const now = Date.now();
+
+    //si tenemos datos en cache y no han expirado los usamos
+    if (this.tiendaCache.length > 0 && now - this.lastFetchTime < this.CACHE_DURATION) {
+      console.log('Usando datos en cache');
+      return of(this.tiendaCache);
+    }
+
+    //si no, hacer perticio a la api
     return this.http.get<ITienda[]>(this.apiUrl).pipe(
         map((tiendas: any[]) => tiendas.map(t => ({
             ...t,
@@ -27,6 +39,36 @@ private apiUrl = `${environment.apiUrl}/tiendas`;
         })))
     );
 }
+
+// getTiendas(): Observable<ITienda[]> {
+//   const now = Date.now();
+  
+//   // Si tenemos datos en caché y no han expirado, usarlos
+//   if (this.tiendaCache.length > 0 && now - this.lastFetchTime < this.CACHE_DURATION) {
+//     console.log('Usando datos en caché');
+//     return of(this.tiendaCache);
+//   }
+  
+//   // Si no, hacer petición a la API
+//   console.log('Solicitando datos a la API');
+//   return this.http.get<ITienda[]>(`${this.apiUrl}/tiendas`)
+//     .pipe(
+//       tap(tiendas => {
+//         this.tiendaCache = tiendas;
+//         this.lastFetchTime = now;
+//         console.log('Datos almacenados en caché:', tiendas.length);
+//       }),
+//       catchError(error => {
+//         console.error('Error cargando tiendas:', error);
+//         // Si hay un error pero tenemos caché, usamos la caché aunque esté expirada
+//         if (this.tiendaCache.length > 0) {
+//           console.log('Usando caché expirada debido a error');
+//           return of(this.tiendaCache);
+//         }
+//         return of([]);
+//       })
+//     );
+// }
 
 
 

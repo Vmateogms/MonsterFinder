@@ -5,10 +5,11 @@ import { TiendaDetailComponent } from "../tienda-detail/tienda-detail.component"
 import { LeafletModule } from '@asymmetrik/ngx-leaflet';
 import { CommonModule } from '@angular/common';
 import { TiendaService } from '../../services/tienda.service'; 
-import { catchError, of } from 'rxjs';
+import { catchError, of, Subscription } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AddtiendaComponent } from "../addtienda/addtienda.component";
 import { CommunicationService } from '../../services/communication.service';
+import { MonsterService } from '../../services/monster.service';
 
 
 @Component({
@@ -31,9 +32,10 @@ nearestStores: ITienda[] = [];
 isLocating: boolean = false;
 userLocation: LatLng | null = null;
 watchId: number | null = null;
-  mService: any;
+filteredResultsSubscription: Subscription | null = null;
 
-constructor (private tiendaService: TiendaService, private fb: FormBuilder, private cservice: CommunicationService) {}
+
+constructor (private tiendaService: TiendaService, private fb: FormBuilder, private cservice: CommunicationService, private mService: MonsterService) {}
 
 
 //Cordenadas Santander
@@ -156,7 +158,13 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
   }
 
   locateUser(): void {
+    //indicador de carga
     this.isLocating = true;
+
+    const loadingEl = document.createElement('div');
+    loadingEl.className = 'location-loader';
+    loadingEl.innerHTML = 'Localizando...';
+    document.body.appendChild(loadingEl);
 
     if(navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -174,6 +182,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
           this.actualizarDistanciaTiendas();
 
           this.isLocating = false;
+          document.body.removeChild(loadingEl);
 
           this.startWatchingPosition();
         },
@@ -191,6 +200,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     } else {
       console.error('Geolocalizacion no supported por el buscador');
       this.isLocating = false;
+      document.body.removeChild(loadingEl);
     }
   }
 
@@ -260,14 +270,29 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     const userIcon = new L.DivIcon({
       className: 'user-location-marker',
       html: '<div class="user-dot"></div><div class="user-pulse"></div>',
-      iconSize: [20, 20],
-      iconAnchor: [10,10]
+      iconSize: [30, 30],
+      iconAnchor: [15,15]
     })
 
     //añadir nuevo marcador 
-    this.userLocationMarker = L.marker(location, {icon: userIcon})
+    this.userLocationMarker = L.marker(location, {
+      icon: userIcon,
+       zIndexOffset: 1000}) // zIndexOffset asegura que el marcador de usuario siempre esté encima
       .addTo(this.map)
-      .bindPopup("¡Estas aqui!");
+      .bindPopup("¡Estas aqui!")
+      .openPopup();
+
+      // Añade también un círculo de precisión 
+     const accuracyCircle = L.circle(location, {
+      radius: 40, // Radio en metros 
+      weight: 1,
+      color: '#4285F4',
+      fillColor: '#4285F480',
+      fillOpacity: 0.15
+      }).addTo(this.map);
+
+
+      console.log('Marcador de ubicación añadido en:', location);
   }
 
   actualizarDistanciaTiendas(): void {
@@ -409,4 +434,6 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     }
   }
 
+
 }
+

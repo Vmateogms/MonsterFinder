@@ -1,0 +1,63 @@
+<div class="filter-container">
+  <!-- Botón para desplegar/colapsar el panel de filtro -->
+  <button class="btn-filter-toggle" (click)="toggleFilterPanel()">
+    <i class="fas fa-filter"></i> Filtrar Monsters
+  </button>
+  
+  <!-- Panel de filtros que se muestra/oculta -->
+  <div class="filter-panel" [ngClass]="{'is-visible': isFilterVisible}">
+    <div class="filter-header">
+      <h3>Filtrar productos</h3>
+      <button class="btn-close" (click)="toggleFilterPanel()">&times;</button>
+    </div>
+    
+    <div class="form-group">
+      <label for="monsterSelect">Selecciona bebida:</label>
+      <select id="monsterSelect" class="form-control" [(ngModel)]="nombreBusqueda">
+        <option value="">-- Seleccionar --</option>
+        @for (monster of monsters; track monster.id) {
+          <option [value]="monster.nombre">
+            {{ monster.nombre }} @if (monster.sabor) { ({{ monster.sabor }}) }
+          </option>
+        }
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="ordenSelect">Ordenar por:</label>
+      <select id="ordenSelect" class="form-control" [(ngModel)]="ordenPrecio">
+        <option value="precioAscendente">Precio (más bajo primero)</option>
+        <option value="precioDescendente">Precio (más alto primero)</option>
+      </select>
+    </div>
+    
+    <button class="btn btn-primary" (click)="buscarPorFiltro()">Buscar</button>
+  </div>
+
+  
+  
+  <!-- Panel de resultados -->
+  @if (filteredMonsters.length > 0) {
+    <div class="results-panel">
+      <div class="results-header">
+        <h4>Resultados ({{ filteredMonsters.length }})</h4>
+        <button class="btn-close-results" (click)="filteredMonsters = []">&times;</button>
+      </div>
+      
+      @for (item of filteredMonsters; track $index) {
+        <div class="monster-card" (click)="seleccionarMonster(item)">
+          <div class="card-header">
+            <h5>{{ item.nombreMonster }}</h5>
+            @if (item.sabor) {
+              <span class="badge">{{ item.sabor }}</span>
+            }
+          </div>
+          <div class="card-body">
+            <p class="price">{{ item.precio | currency:'EUR' }}</p>
+            <p class="store">{{ item.nombreTienda }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

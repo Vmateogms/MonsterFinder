@@ -30,91 +30,76 @@
     background-image: url('/assets/marker-shadow.png') !important;
   }
 
-  @keyframes pulse {
-    0% {
-      transform: translate(-50%, -50%) scale(0.5);
-      opacity: 1;
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(1.5);
-      opacity: 0;
-    }
-  }
+
   
   .locate-button {
-    background-color: white;
-    width: 30px;
-    height: 30px;
-    line-height: 30px;
-    text-align: center;
-    border-radius: 4px;
-    color: #333;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    width: 36px;
+    height: 36px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     cursor: pointer;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+    font-size: 18px;
+    color: #4285F4;
+    transition: background-color 0.2s;
   }
   
   .locate-button:hover {
-    background-color: #f4f4f4;
+    background-color: #f0f0f0;
   }
   
-  .distance-badge {
-    background-color: #4285F4;
-    color: white;
-    padding: 3px 6px;
-    border-radius: 10px;
-    font-size: 12px;
-    margin-left: 5px;
+
+
+  .nearest-stores-panel h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
   }
 
+  .nearest-stores-list::-webkit-scrollbar {
+    width: 6px;
+  }
 
-.nearest-stores-panel {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: white;
-  border-radius: 4px;
-  padding: 10px;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-  max-width: 250px;
-  z-index: 1000;
-}
+  .nearest-stores-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+  
+  .nearest-stores-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+  }
 
-.nearest-stores-panel h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 16px;
-  text-align: center;
-}
+  .store-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    transition: background-color 0.2s;
+    cursor: pointer;
+  }
+  
+  .store-item:hover {
+    background-color: #e9ecef;
+  }
+  
+  .store-item:last-child {
+    margin-bottom: 0;
+  }
 
-.nearest-stores-list {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.store-item {
-  padding: 8px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.store-item:last-child {
-  border-bottom: none;
-}
-
-.store-item:hover {
-  background-color: #f4f4f4;
-}
-
-.store-name {
-  font-weight: 500;
-}
+  .store-name {
+    font-weight: 500;
+    font-size: 14px;
+    color: #333;
+  }
 
 
 
@@ -137,112 +122,86 @@ nuevo
 
 .nearest-stores-panel {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  bottom: 20px;
+  right: 20px;
   background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-  padding: 10px;
-  max-width: 300px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  max-width: 280px;
+  width: 280px;
   z-index: 1000;
+  transition: all 0.3s ease;
 }
 
 .nearest-stores-list {
-  max-height: 300px;
+  max-height: 250px;
   overflow-y: auto;
-}
-
-.store-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-}
-
-.store-item:hover {
-  background-color: #f5f5f5;
-}
-
-.store-name {
-  font-weight: bold;
+  padding-right: 5px;
 }
 
 .distance-badge {
   background-color: #4285F4;
   color: white;
+  padding: 4px 8px;
   border-radius: 12px;
-  padding: 3px 8px;
-  font-size: 0.8em;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .user-location-marker {
   position: relative;
-}
-
-.user-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: #4285F4;
-  border: 3px solid white;
-  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.5); 
-}
-
-.user-pulse {
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background-color: rgba(66, 133, 244, 0.4);
-  border: 3px solid rgba(66, 133, 244, 0.7);
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
+  z-index: 1000 !important;
 }
 
 /* Estilos para el filtro de monstruos */
+/* Panel de filtros */
 .filter-container {
   position: absolute;
-  top: 60px;
-  left: 10px;
+  top: 20px;
+  left: 20px;
   z-index: 1000;
-  max-width: 300px;
+  max-width: 320px;
 }
 
 .btn-filter-toggle {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 15px;
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
 }
 
 .btn-filter-toggle:hover {
   background-color: #f5f5f5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-filter-toggle i {
+  margin-right: 8px;
+  color: #4285F4;
 }
 
 .filter-panel {
-  background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  margin-top: 10px;
-  padding: 15px;
   display: none;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  margin-top: 10px;
+  padding: 18px;
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .filter-panel.is-visible {
@@ -253,85 +212,133 @@ nuevo
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 18px;
+}
+
+.filter-header h3 {
+  font-size: 16px;
+  margin: 0;
+  color: #333;
 }
 
 .btn-close {
   background: none;
   border: none;
   font-size: 20px;
+  line-height: 1;
   cursor: pointer;
+  color: #666;
+  padding: 0;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
 }
 
 .form-control {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  border-color: #4285F4;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
 }
 
 .btn-primary {
+  width: 100%;
   background-color: #4285F4;
   color: white;
   border: none;
-  border-radius: 4px;
-  padding: 8px 12px;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  width: 100%;
+  transition: background-color 0.2s;
 }
 
 .btn-primary:hover {
-  background-color: #357ae8;
+  background-color: #3367d6;
 }
 
 .results-panel {
   background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  margin-top: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  margin-top: 15px;
   max-height: 400px;
   overflow-y: auto;
+  animation: fadeIn 0.3s;
 }
 
 .results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 15px;
+  padding: 12px 15px;
   border-bottom: 1px solid #eee;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.results-header h4 {
+  margin: 0;
+  font-size: 15px;
+  color: #333;
 }
 
 .btn-close-results {
   background: none;
   border: none;
   font-size: 18px;
+  line-height: 1;
   cursor: pointer;
+  color: #666;
+  padding: 0;
 }
 
 .monster-card {
+  padding: 12px 15px;
   border-bottom: 1px solid #eee;
-  padding: 10px 15px;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .monster-card:hover {
   background-color: #f5f5f5;
 }
 
+.monster-card:last-child {
+  border-bottom: none;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 8px;
+}
+
+.card-header h5 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .badge {
@@ -339,17 +346,58 @@ nuevo
   color: white;
   border-radius: 12px;
   padding: 3px 8px;
-  font-size: 0.8em;
+  font-size: 12px;
+}
+
+.card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .price {
   font-weight: bold;
-  font-size: 1.1em;
+  font-size: 16px;
   color: #4285F4;
+  margin: 0;
 }
 
 .store {
-  font-size: 0.9em;
+  font-size: 13px;
   color: #666;
+  margin: 0;
 }
-</antArt
+
+.location-loader {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 6px;
+  z-index: 2000;
+  font-size: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .nearest-stores-panel,
+  .filter-container {
+    max-width: calc(100% - 40px);
+    width: auto;
+  }
+  
+  .filter-container {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+  }
+  
+  .nearest-stores-panel {
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+  }
+}

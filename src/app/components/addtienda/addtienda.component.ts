@@ -5,6 +5,7 @@ import { TiendaService } from '../../services/tienda.service';
 import { CommunicationService } from '../../services/communication.service';
 import bootstrap, { Modal } from 'bootstrap';
 
+
 @Component({
   selector: 'app-addtienda',
   standalone: true,
