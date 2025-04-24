@@ -1,6 +1,6 @@
 import { Component, AfterViewInit, OnInit } from '@angular/core';
 import { ITienda } from '../../interfaces/itienda';
-import L, { LatLng, latLng, LeafletMouseEvent, Map, map, marker, tileLayer } from 'leaflet';
+import L, { LatLng, latLng, LeafletMouseEvent, Map, map, marker, tileLayer,  Icon, DivIcon } from 'leaflet';
 import { TiendaDetailComponent } from "../tienda-detail/tienda-detail.component";
 import { LeafletModule } from '@asymmetrik/ngx-leaflet';
 import { CommonModule } from '@angular/common';
@@ -22,9 +22,16 @@ export class MapaComponent implements OnInit, AfterViewInit{
 
 private map! : Map;
 private markers: L.Marker[] = [];
+private userLocationMarker: L.Marker | null = null;
+private highlightedMarker: L.CircleMarker | null = null;
 selectedTienda: ITienda | null = null;
 tiendas: any[] = [];
 addStoreForm!: FormGroup;
+nearestStores: ITienda[] = [];
+isLocating: boolean = false;
+userLocation: LatLng | null = null;
+watchId: number | null = null;
+  mService: any;
 
 constructor (private tiendaService: TiendaService, private fb: FormBuilder, private cservice: CommunicationService) {}
 
@@ -41,10 +48,49 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     })
     this.cargarTiendas();
     this.cservice.updateMap$.subscribe(() => this.cargarTiendas());
+    this.mService.registerMapaComponent(this);
+     // Suscribirse a resultados filtrados
+     this.filteredResultsSubscription = this.mService.resultadosFiltrado$.subscribe(
+      results => this.handleFilteredResults(results)
+    );
+
+  }
+
+  handleFilteredResults(results: any[]): void {
+    if (!results || results.length === 0) return;
+    
+    // Si hay resultados, encontrar las tiendas correspondientes y resaltarlas
+    const storeIds = [...new Set(results.map(r => r.tiendaId))];
+    
+    // Eliminar cualquier resaltado anterior
+    this.clearHighlights();
+    
+    // Resaltar las tiendas en los resultados
+    storeIds.forEach(id => {
+      const tienda = this.tiendas.find(t => t.id === id);
+      if (tienda) {
+        this.highlightStore(tienda);
+      }
+    });
+    
+    // Si solo hay un resultado, centramos el mapa en esa tienda
+    if (results.length === 1) {
+      const tienda = this.tiendas.find(t => t.id === results[0].tiendaId);
+      if (tienda) {
+        this.centerMapOnStore(tienda);
+      }
+    }
   }
 
   ngAfterViewInit(): void {
     this.initMap();
+    //comprobamos si la geolocalizacion esta supported por el navegador
+    if('geolocation' in navigator) {
+      this.addLocateControl();
+    } else {
+      console.warn('Geolocation is not supported by this browser.')
+    }
+
   }
 
   private cargarTiendas(): void {
@@ -60,6 +106,12 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
             console.log('Tiendas recibidas:', tiendas);
             this.tiendas = tiendas;
             this.addMarkers();
+
+            //si la localizacion esta ya disponible , actualizamos las distancias
+            if (this.userLocation) {
+              this.actualizarDistanciaTiendas();
+            }
+
           });
   }
 
@@ -77,6 +129,226 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     }).addTo(this.map);
   }
 
+  private addLocateControl(): void {
+    const customControl = L.Control.extend({
+      options: {
+        position: 'topleft'
+      },
+      onAdd: () => {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        const button = L.DomUtil.create('a', 'locate-button', container);
+        button.href = '#';
+        button.title = 'Mostrar mi ubicacion';
+        button.innerHTML = '<i class="fas fa-location-arrow"></i>';
+        if(!button.innerHTML.includes('fa-location-arrow')) {
+          button.innerHTML = '📍';
+        }
+
+        L.DomEvent.on(button, 'click', L.DomEvent.stop)
+          .on(button, 'click', () => {
+            this.locateUser();
+          });
+
+          return container;
+      }
+    });
+    this.map.addControl(new customControl());
+  }
+
+  locateUser(): void {
+    this.isLocating = true;
+
+    if(navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude} = position.coords;
+          this.userLocation = latLng(latitude, longitude);
+
+          //Añadir o actualizar el marker del usuario
+          this.addUserLocationMarker(this.userLocation);
+
+          //centrar el mapa en la localizacion del usuario
+          this.map.setView(this.userLocation, 15);
+
+          //calcular distancias a todas las tiendas
+          this.actualizarDistanciaTiendas();
+
+          this.isLocating = false;
+
+          this.startWatchingPosition();
+        },
+        (error) => {
+          console.error( 'Error obteniendo localizacion' , error);
+          this.handleLocationError(error);
+          this.isLocating = false;
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      console.error('Geolocalizacion no supported por el buscador');
+      this.isLocating = false;
+    }
+  }
+
+  startWatchingPosition(): void {
+    //limpiar cualquier vista existente
+    if (this.watchId !== null) {
+      navigator.geolocation.clearWatch(this.watchId);
+    }
+
+    //empezar una nueva vista
+    this.watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const {latitude, longitude} = position.coords;
+        this.userLocation = latLng(latitude, longitude);
+
+        //actualizar el marcador de la posicion del usuario
+        this.addUserLocationMarker(this.userLocation);
+
+        //recalcular distancias
+        this.actualizarDistanciaTiendas();
+      },
+      (error) => {
+        console.error('Error watching position', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  stopWatchingPosition(): void {
+    if (this.watchId !== null) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+    }
+  }
+
+  handleLocationError(error: GeolocationPositionError): void {
+    let message = '';
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+      message = 'El usuario ha denegado el permiso para la geolocalizacion.';
+      break;
+      case error.POSITION_UNAVAILABLE:
+      message = 'La informacion de ubicacion no esta disponible.';
+      break  ;
+      case error.TIMEOUT:
+      message = 'La solicitud para obtener la ubicacion del usuario ha caducado';
+      break;
+      default:
+      message = 'Se ha producido un error desconocido.';
+      break;
+    }
+
+    alert (message);
+  }
+
+  addUserLocationMarker(location: LatLng): void {
+    //quitar marquer anterior si es que existiese
+    if ( this.userLocationMarker) {
+      this.map.removeLayer(this.userLocationMarker);
+    }
+
+    //crear un icono customizado para la localizacion
+    const userIcon = new L.DivIcon({
+      className: 'user-location-marker',
+      html: '<div class="user-dot"></div><div class="user-pulse"></div>',
+      iconSize: [20, 20],
+      iconAnchor: [10,10]
+    })
+
+    //añadir nuevo marcador 
+    this.userLocationMarker = L.marker(location, {icon: userIcon})
+      .addTo(this.map)
+      .bindPopup("¡Estas aqui!");
+  }
+
+  actualizarDistanciaTiendas(): void {
+    if(!this.userLocation) return;
+
+    //calcular distancia del usuario a cada tienda
+    this.tiendas.forEach(tienda => {
+      const storeLocation = latLng(tienda.latitud, tienda.longitud);
+      // @ts-ignore - distance is available in LatLng
+      const distancia = this.userLocation.distanceTo(storeLocation) / 2000;
+      (tienda as any).distance = parseFloat(distancia.toFixed(2));
+    });
+
+    //filtrar tiendas por distancia
+    this.nearestStores = [...this.tiendas].sort((a, b) => 
+    (a as any).distance - (b as any).distance
+  );
+
+  console.log('Tiendas mas cercanas: ', this.nearestStores);
+  }
+
+  findNearestStoreWithMonster(monsterId: number): ITienda | null {
+    if (!this.userLocation || !this.nearestStores.length) return null;
+    
+    // encontrar tiendas que tengan monster
+    const storesWithMonster = this.nearestStores.filter(tienda => 
+      tienda.monsters.some(m => m.monster.id === monsterId)
+    );
+    
+    // filtrar por precio
+    const sortedStores = storesWithMonster.sort((a, b) => {
+      const monsterA = a.monsters.find(m => m.monster.id === monsterId);
+      const monsterB = b.monsters.find(m => m.monster.id === monsterId);
+      
+      // obtener precio descontado si es posible si no normal 
+      const priceA = monsterA?.descuento ? monsterA.precioDescuento ?? monsterA.precio : monsterA?.precio ?? Infinity;
+      const priceB = monsterB?.descuento ? monsterB.precioDescuento ?? monsterB.precio : monsterB?.precio ?? Infinity;
+      
+      return priceA - priceB;
+    });
+    
+    // devolver la mejor opcion ( precio mas barato )
+    return sortedStores.length ? sortedStores[0] : null;
+  }
+
+    // Nuevo método para resaltar una tienda en el mapa
+    highlightStore(tienda: ITienda): void {
+      if (!tienda || !this.map) return;
+      
+      // Crear un círculo resaltado alrededor del marcador
+      const latlng = latLng(tienda.latitud, tienda.longitud);
+      const highlightCircle = L.circleMarker(latlng, {
+        radius: 30,
+        color: '#4285F4',
+        fillColor: '#4285F4',
+        fillOpacity: 0.3,
+        weight: 2
+      }).addTo(this.map);
+      
+      // Guardar referencia para poder eliminarlo después
+      this.highlightedMarker = highlightCircle;
+      
+      // Mostrar información de la tienda
+      this.showTiendaInfo(tienda);
+    }
+    
+    // Método para centrar el mapa en una tienda específica
+    centerMapOnStore(tienda: ITienda): void {
+      if (!tienda || !this.map) return;
+      
+      const latlng = latLng(tienda.latitud, tienda.longitud);
+      this.map.setView(latlng, 16);
+    }
+    
+    // Método para limpiar resaltados en el mapa
+    clearHighlights(): void {
+      if (this.highlightedMarker) {
+        this.map.removeLayer(this.highlightedMarker);
+        this.highlightedMarker = null;
+      }
+    }
 
   private addMarkers(): void {
     // Limpiar marcadores existentes
@@ -129,6 +401,12 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
       latitud: event.latlng.lat,
       longitud: event.latlng.lng
     })
+  }
+
+  ngOnDestroy(): void {
+    if (this.watchId !== null) {
+      navigator.geolocation.clearWatch(this.watchId);
+    }
   }
 
 }
