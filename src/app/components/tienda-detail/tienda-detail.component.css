@@ -126,7 +126,7 @@
 .discount-price {
   color: #d9534f;
   font-weight: bold;
-  text-decoration: none;  /* Podría añadir line-through si quisieras mostrar que es un descuento */
+  text-decoration: none;  
 }
 
 .discount-badge {

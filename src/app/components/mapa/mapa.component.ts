@@ -268,10 +268,12 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
 
     //crear un icono customizado para la localizacion
     const userIcon = new L.DivIcon({
-      className: 'user-location-marker',
-      html: '<div class="user-dot"></div><div class="user-pulse"></div>',
-      iconSize: [30, 30],
-      iconAnchor: [15,15]
+      
+      className: 'monster-marker', // Just a basic class name
+      html: `<img src="assets/monsterconducir.png" style="width:60px; height:60px;">`,
+      iconSize: [60, 60],
+      iconAnchor: [30, 30]
+      
     })
 
     //añadir nuevo marcador 
@@ -279,7 +281,6 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
       icon: userIcon,
        zIndexOffset: 1000}) // zIndexOffset asegura que el marcador de usuario siempre esté encima
       .addTo(this.map)
-      .bindPopup("¡Estas aqui!")
       .openPopup();
 
       // Añade también un círculo de precisión 
