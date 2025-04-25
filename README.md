@@ -26,7 +26,7 @@ datos en MySQL.
 
 #### Activar ubicación
 Arriba a la izquierda del mapa podras ver un checkbox con un pin donde, si clickeas una sola vez,
-te llevara automaticamente a tu ubicacion "exacta", donde podras **consultar las tiendas mas cercanas**
+te llevara automaticamente a tu ubicacion "exacta", donde podras **consultar las tiendas mas cercanas**.
 
 #### Tiendas cercanas
 Una vez se ha activado la ubicacion en tiempo real, podras ver un boton azul abajo a la derecha, con el que
