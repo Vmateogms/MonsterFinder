@@ -9,11 +9,15 @@
       (closed)="handleClose()"
     /> 
   }
-  
- 
-  @if (userLocation && nearestStores.length > 0) {
+
+  <Button class="tiendasCercanas" (click)="togglePanel()">Tiendas cercanas</Button>
+
+  @if (userLocation && nearestStores.length > 0 && panelVisible) {
     <div class="nearest-stores-panel">
+      <div class="panel-header">
       <h3>Tiendas cercanas</h3>
+      <button  (click)="panelVisible = false"  class="close-button btn btn-danger">X</button>
+      </div>
       <div class="nearest-stores-list">
         @for (tienda of nearestStores.slice(0, 5); track tienda.id) {
           <div class="store-item" (click)="showTiendaInfo(tienda)">

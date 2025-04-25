@@ -33,7 +33,8 @@ isLocating: boolean = false;
 userLocation: LatLng | null = null;
 watchId: number | null = null;
 filteredResultsSubscription: Subscription | null = null;
-
+panelVisible = false; 
+tiendasCercanas = true; 
 
 constructor (private tiendaService: TiendaService, private fb: FormBuilder, private cservice: CommunicationService, private mService: MonsterService) {}
 
@@ -283,14 +284,14 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
       .addTo(this.map)
       .openPopup();
 
-      // Añade también un círculo de precisión 
-     const accuracyCircle = L.circle(location, {
-      radius: 40, // Radio en metros 
-      weight: 1,
-      color: '#4285F4',
-      fillColor: '#4285F480',
-      fillOpacity: 0.15
-      }).addTo(this.map);
+    //   // Añade también un círculo de precisión 
+    //  const accuracyCircle = L.circle(location, {
+    //   radius: 40, // Radio en metros 
+    //   weight: 1,
+    //   color: '#4285F4',
+    //   fillColor: '#4285F480',
+    //   fillOpacity: 0.15
+    //   }).addTo(this.map);
 
 
       console.log('Marcador de ubicación añadido en:', location);
@@ -374,6 +375,10 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
         this.map.removeLayer(this.highlightedMarker);
         this.highlightedMarker = null;
       }
+    }
+    
+    togglePanel() {
+      this.panelVisible = !this.panelVisible;
     }
 
   private addMarkers(): void {
