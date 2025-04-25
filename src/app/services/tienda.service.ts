@@ -34,7 +34,8 @@ private readonly CACHE_DURATION = 5 * 60 * 1000 //5 minutos
                 monster: tm.monster,
                 precio: tm.precio,
                 descuento: tm.descuento || false,
-                precioDescuento: tm.precioDescuento
+                precioDescuento: tm.precioDescuento,
+                enNevera: tm.enNevera
             }))
         })))
     );
@@ -81,7 +82,7 @@ getTiendaById(id: number): Observable<ITienda> {
       const mappedTienda = {
         ...tienda,
         monsters: tienda.tiendaMonsters.map((tm: any) => {
-          console.log(`Processing monster ${tm.monster.id}: precio=${tm.precio}, descuento=${tm.descuento}, precioDescuento=${tm.precioDescuento}`);
+          console.log(`Processing monster ${tm.monster.id}: precio=${tm.precio}, descuento=${tm.descuento}, precioDescuento=${tm.precioDescuento}, nevera=${tm.enNevera}`);
           
           return {
             monster: tm.monster,
@@ -89,7 +90,8 @@ getTiendaById(id: number): Observable<ITienda> {
             // Asegurar que los valores de descuento estén correctamente mapeados
             descuento: tm.descuento === true, 
             // Garantizar que precioDescuento sea null si no está definido
-            precioDescuento: tm.precioDescuento !== undefined ? tm.precioDescuento : null 
+            precioDescuento: tm.precioDescuento !== undefined ? tm.precioDescuento : null,
+            enNevera: tm.enNevera === true
           };
         })
       };

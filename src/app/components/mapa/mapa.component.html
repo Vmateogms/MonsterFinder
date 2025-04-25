@@ -10,7 +10,7 @@
     /> 
   }
 
-  <Button class="tiendasCercanas" (click)="togglePanel()">Tiendas cercanas</Button>
+  <Button class="tiendasCercanas  btn btn-secondary " (click)="togglePanel()">Tiendas cercanas</Button>
 
   @if (userLocation && nearestStores.length > 0 && panelVisible) {
     <div class="nearest-stores-panel">

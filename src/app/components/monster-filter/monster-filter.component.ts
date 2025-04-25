@@ -19,6 +19,7 @@ export class MonsterFilterComponent implements OnInit, OnDestroy {
   ordenPrecio: string = 'precioAscendente'; //valor por defecto
   isFilterVisible: boolean = false; 
   useLocation: boolean = true;
+  filterEnNevera: boolean = false;
 
   private mapaComponent: MapaComponent | null = null;
   private subscriptions: Subscription[] = [];

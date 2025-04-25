@@ -66,6 +66,16 @@
   height: 100px;
 }
 
+.nevera-badge {
+  font-size: 12px;
+  background-color: #0d6efd;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 8px;
+  display: inline-block;
+}
+
 
 .monsters-list img,
 .monster-edit-item img,

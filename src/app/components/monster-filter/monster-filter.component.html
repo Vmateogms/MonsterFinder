@@ -1,7 +1,7 @@
 <div class="filter-container">
   <!-- Botón para desplegar/colapsar el panel de filtro -->
   <button class="btn-filter-toggle" (click)="toggleFilterPanel()">
-    <i class="fas fa-filter"></i> Filtrar Monsters
+    <i class="fas fa-filter">Filtrar Monsters</i> 
   </button>
   
   <!-- Panel de filtros que se muestra/oculta -->
@@ -30,6 +30,18 @@
         <option value="precioDescendente">Precio (más alto primero)</option>
       </select>
     </div>
+
+    div class="form-group">
+      <label class="checkbox-label">
+        <input type="checkbox" [(ngModel)]="filterEnNevera"> Solo disponibles en nevera
+      </label>
+    </div>
+    
+    <div class="form-group">
+      <label class="checkbox-label">
+        <input type="checkbox" [(ngModel)]="useLocation"> Usar mi ubicación para encontrar la más cercana
+      </label>
+    </div>
     
     <button class="btn btn-primary" (click)="buscarPorFiltro()">Buscar</button>
   </div>
@@ -41,21 +53,33 @@
     <div class="results-panel">
       <div class="results-header">
         <h4>Resultados ({{ filteredMonsters.length }})</h4>
-        <button class="btn-close-results" (click)="filteredMonsters = []">&times;</button>
+        <button class="btn-close-results" (click)="filteredMonsters = []">×</button>
       </div>
-      
+
       @for (item of filteredMonsters; track $index) {
         <div class="monster-card" (click)="seleccionarMonster(item)">
           <div class="card-header">
             <h5>{{ item.nombreMonster }}</h5>
-            @if (item.sabor) {
-              <span class="badge">{{ item.sabor }}</span>
+            @if (item.oferta) {
+              <span class="badge oferta">Oferta</span>
+            } @else if (item.enNevera) {
+              <span class="badge nevera">Nevera</span>
             }
           </div>
-          <div class="card-body">
-            <p class="price">{{ item.precio | currency:'EUR' }}</p>
-            <p class="store">{{ item.nombreTienda }}</p>
+
+          @if (item.sabor) {
+            <div class="flavor">{{ item.sabor }}</div>
+          }
+
+          <div class="price">{{ item.precio }} €</div>
+          
+          <div class="store">
+            {{ item.nombreTienda }}
           </div>
+          
+          @if (item.distancia) {
+            <div class="distancia">{{ item.distancia }} km</div>
+          }
         </div>
       }
     </div>

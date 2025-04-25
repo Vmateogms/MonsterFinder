@@ -24,7 +24,7 @@ export class AddtiendaComponent {
       nombre: ['', Validators.required],
       latitud: ['', Validators.required],
       longitud: ['', Validators.required],
-      imagenUrl: ['']
+      //imagenUrl: ['']
       
     });
   }
@@ -39,7 +39,7 @@ export class AddtiendaComponent {
         nombre: this.addStoreForm.get('nombre').value,
         latitud: this.addStoreForm.get('latitud').value,
         longitud: this.addStoreForm.get('longitud').value,
-        imagenUrl: this.addStoreForm.get('imagenUrl').value || null 
+        //imagenUrl: this.addStoreForm.get('imagenUrl').value || null 
       };
   
       console.log('Sending precise payload:', payload);

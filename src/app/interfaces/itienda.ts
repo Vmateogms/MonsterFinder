@@ -18,6 +18,6 @@ export interface ITienda {
     precio: number;
     descuento?: boolean;
     precioDescuento?: number;
-   
+    enNevera?: boolean; 
     }[];
 }

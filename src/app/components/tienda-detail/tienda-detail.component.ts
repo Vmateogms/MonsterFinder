@@ -84,6 +84,13 @@ export class TiendaDetailComponent implements OnInit {
         [Validators.min(0)]
       );
       group[`discount_price_${monster.id}`] = discountPriceControl;
+
+      //control nevera checkbox
+      const existeEnNevera = (isInStore && this.tienda) ?
+                            this.getExistingNevera(monster.id) :
+                            false;
+      const neveraControl = new FormControl(existeEnNevera);
+      group[`nevera_${monster.id}`] = neveraControl;
   
       if (isInStore) {
         priceControl.setValidators([Validators.required, Validators.min(0)]);
@@ -98,7 +105,8 @@ export class TiendaDetailComponent implements OnInit {
       const priceControl = this.getPriceControl(monster);
       const discountControl = this.getDiscountControl(monster);
       const discountPriceControl = this.getDiscountPriceControl(monster);
-      
+      const neveraControl = this.getNeveraControl(monster);
+
       if (monsterControl && priceControl) {
         monsterControl.valueChanges.subscribe(checked => {
           if (checked) {
@@ -108,6 +116,7 @@ export class TiendaDetailComponent implements OnInit {
             priceControl.setValue(null); // limpiar valor cuando se desmarca
             discountControl.setValue(false); // resetear descuento también
             discountPriceControl.setValue(null); // resetear precio con descuento
+            neveraControl.setValue(false); // nevera en false default
           }
           priceControl.updateValueAndValidity();
         });
@@ -146,6 +155,11 @@ export class TiendaDetailComponent implements OnInit {
     return existingMonster && existingMonster.precioDescuento ? existingMonster.precioDescuento : 0;
   }
 
+  getExistingNevera(monsterId: number): boolean {
+    const existingMonster = this.tienda.monsters.find(m => m.monster.id === monsterId);
+    return existingMonster ? (existingMonster.enNevera || false): false;
+  }
+
   // control del checkbox
   getMonsterControl(monster: IMonster): FormControl {
     return this.monsterEditForm.get(`monster_${monster.id}`) as FormControl;
@@ -163,6 +177,10 @@ export class TiendaDetailComponent implements OnInit {
   // obtener control de precio con descuento (NUEVO)
   getDiscountPriceControl(monster: IMonster): FormControl {
     return this.monsterEditForm.get(`discount_price_${monster.id}`) as FormControl;
+  }
+
+  getNeveraControl(monster: IMonster): FormControl {
+    return this.monsterEditForm.get(`nevera_${monster.id}`) as FormControl;
   }
 
   // Guardar los monstersa actualizados para la tienda
@@ -198,6 +216,9 @@ export class TiendaDetailComponent implements OnInit {
           }
         }
 
+        const enNevera = this.getNeveraControl(monster)?.value || false;
+
+
         // if (descuento) {
         //   const discountPriceValue = this.getDiscountPriceControl(monster)?.value;
         //   precioDescuento = discountPriceValue !== null && discountPriceValue !== undefined ?
@@ -208,7 +229,8 @@ export class TiendaDetailComponent implements OnInit {
           monsterId: monster.id,
           precio: precio,
           descuento: descuento,
-          precioDescuento: precioDescuento  
+          precioDescuento: precioDescuento ,
+          enNevera: enNevera
         };
       });
       console.log('Updates completos antes de enviar:', JSON.stringify(updates));
@@ -279,7 +301,8 @@ export class TiendaDetailComponent implements OnInit {
           name: m.monster.nombre,
           precio: m.precio,
           descuento: m.descuento,
-          precioDescuento: m.precioDescuento
+          precioDescuento: m.precioDescuento,
+          enNevera: m.enNevera
         })));
         this.tienda = updatedTienda;
         this.initForm();

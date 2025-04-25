@@ -33,7 +33,7 @@ isLocating: boolean = false;
 userLocation: LatLng | null = null;
 watchId: number | null = null;
 filteredResultsSubscription: Subscription | null = null;
-panelVisible = false; 
+panelVisible: boolean = false; 
 tiendasCercanas = true; 
 
 constructor (private tiendaService: TiendaService, private fb: FormBuilder, private cservice: CommunicationService, private mService: MonsterService) {}
@@ -142,7 +142,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
         const button = L.DomUtil.create('a', 'locate-button', container);
         button.href = '#';
         button.title = 'Mostrar mi ubicacion';
-        button.innerHTML = '<i class="fas fa-location-arrow"></i>';
+        button.innerHTML = '<i class="fas fa-location-arrow">📍</i>';
         if(!button.innerHTML.includes('fa-location-arrow')) {
           button.innerHTML = '📍';
         }
@@ -164,7 +164,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
 
     const loadingEl = document.createElement('div');
     loadingEl.className = 'location-loader';
-    loadingEl.innerHTML = 'Localizando...';
+    loadingEl.innerHTML = '';
     document.body.appendChild(loadingEl);
 
     if(navigator.geolocation) {

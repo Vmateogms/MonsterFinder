@@ -57,7 +57,8 @@ private apiUrl = `${environment.apiUrl}/tienda-monsters`;
       monsterId: update.monsterId,
       precio: update.precio,
       descuento: update.descuento || false,
-      precioDescuento: update.descuento ? update.precioDescuento : null
+      precioDescuento: update.descuento ? update.precioDescuento : null,
+      enNevera: update.enNevera || false
     }));
   
     console.log('Datos enviados:', JSON.stringify(formattedUpdates));

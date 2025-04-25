@@ -93,6 +93,14 @@
                     }
                   </div>
                 }
+
+                <div class="nevera-control">
+                  <input type="checkbox"
+                  [formControl]="getNeveraControl(monster)"
+                  id="nevera_{{monster.id}}">
+                  <label for="nevera_{{monster.id}}">Disponible en nevera</label>
+                </div>
+
               </div>
             }
           </div>
@@ -126,7 +134,9 @@
                   } @else {
                     <p class="card-text">Precio: <strong>{{monsterItem.precio}}€</strong></p>
                   }
-                  
+                  @if (monsterItem.enNevera) {
+                    <span class="badge bg-primary text-white ms-2">EN NEVERA</span>
+                  }
                   <p class="card-text">{{ monsterItem.monster.descripcion}}</p>
                 </div>
               </div>
