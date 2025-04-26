@@ -2,7 +2,7 @@
 URL = (https://monsterfinder.vmateogm.com/) 
 
 
-<img src="resourcesGit/monstermapa.png" width="25%" />
+<img src="src/assets/monstermapa.png" width="25%" />
 
 ## Introducción
 MonsterFinder es una webapp diseñada por V.Mateo GM, como proyecto para solventar el
@@ -59,7 +59,7 @@ usuario, pongamos, crea 10 tiendas en fila en el mar, se podrá vetar la cuenta 
 usuario y automáticamente borrar toda participación de esta en la pagina.
 
 
-<img src="resourcesGit/monsteramistad.png" width="25%" />
+<img src="src/assets/monsteramistad.png" width="25%" />
 
 **Futuras Updates**
 
