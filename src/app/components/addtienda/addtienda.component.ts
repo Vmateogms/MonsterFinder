@@ -21,9 +21,9 @@ export class AddtiendaComponent {
 
   constructor (private fb: FormBuilder, private tService: TiendaService, private cservice: CommunicationService) {
     this.addStoreForm = this.fb.group({
-      nombre: ['', Validators.required],
-      latitud: ['', Validators.required],
-      longitud: ['', Validators.required],
+      nombre: ['', [Validators.required, Validators.minLength(3) ]],
+      latitud: ['', [Validators.required, Validators.pattern(/\./)]],
+      longitud: ['', [Validators.required, Validators.pattern(/\./)]],
       //imagenUrl: ['']
       
     });

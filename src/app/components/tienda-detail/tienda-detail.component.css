@@ -23,6 +23,50 @@
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
+.price-info {
+  width: 100%;
+  text-align: center;
+}
+
+.badge-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.monster-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.monster-item > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.discount-badge, .badge-nevera {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 4px;
+}
 
 .monsters-list {
   display: grid;
@@ -65,17 +109,6 @@
   width: 150px;
   height: 100px;
 }
-
-.nevera-badge {
-  font-size: 12px;
-  background-color: #0d6efd;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 3px;
-  margin-left: 8px;
-  display: inline-block;
-}
-
 
 .monsters-list img,
 .monster-edit-item img,
@@ -139,14 +172,7 @@
   text-decoration: none;  
 }
 
-.discount-badge {
-  background-color: #d9534f;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.8em;
-  margin-left: 6px;
-}
+
 
 .discount-control {
   margin-left: 10px;
@@ -168,14 +194,6 @@
   border-color: #ffc107;
 }
 
-.discount-badge {
-  background-color: #d9534f;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.8em;
-  margin-left: 6px;
-}
 
 .discount-control {
   margin: 10px 0;
@@ -299,7 +317,7 @@
   font-weight: bold;
 }
 
-.discount-badge {
+.discount-badge, .badge-nevera {
   background-color: #FFD700;
   color: #333;
   font-size: 0.8em;

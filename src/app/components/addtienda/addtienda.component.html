@@ -16,14 +16,34 @@
             <div class="mb-3">
               <label class="form-label">Nombre</label>
               <input formControlName="nombre" class="form-control" placeholder="Nombre..." required>
+              @if (addStoreForm.get('nombre').hasError('required') && (addStoreForm.get('nombre').touched ||addStoreForm.get('nombre').dirty)) {
+                <div class="error-message">⚠️ El nombre es requerido</div>
+              }
+              @if (addStoreForm.get('nombre').hasError('minlength')) {
+                <div class="error-message">⚠️ El nombre debe tener al menos 3 caracteres</div>
+              }
             </div>
             <div class="mb-3">
               <label class="form-label">Latitud</label>
               <input formControlName="latitud" type="number" class="form-control" placeholder="Latitud..." required>
+              @if (addStoreForm.get('latitud').hasError('required') && addStoreForm.get('latitud').touched) {
+                <div class="error-message">⚠️ La latitud es requerida</div>
+              }
+              @if (addStoreForm.get('latitud').hasError('pattern')) {
+                <div class="error-message">⚠️ Debe contener un punto decimal</div>
+              }
             </div>
+      
             <div class="mb-3">
               <label class="form-label">Longitud</label>
               <input formControlName="longitud" type="number" class="form-control" placeholder="Longitud..." required>
+              @if (addStoreForm.get('longitud').hasError('required') && addStoreForm.get('longitud').touched) {
+                <div class="error-message">⚠️ La longitud es requerida</div>
+              }
+              
+              @if (addStoreForm.get('longitud').hasError('pattern')) {
+                <div class="error-message">⚠️ Debe contener un punto decimal</div>
+              }
             </div>
             <button type="submit" class="btn btn-primary">Añadir</button>
           </form>

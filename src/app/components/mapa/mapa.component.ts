@@ -10,12 +10,13 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AddtiendaComponent } from "../addtienda/addtienda.component";
 import { CommunicationService } from '../../services/communication.service';
 import { MonsterService } from '../../services/monster.service';
+import { ModalBienvenidaComponent } from "../modal-bienvenida/modal-bienvenida.component";
 
 
 @Component({
   selector: 'app-mapa',
   standalone: true,
-  imports: [TiendaDetailComponent, LeafletModule, CommonModule, AddtiendaComponent],
+  imports: [TiendaDetailComponent, LeafletModule, CommonModule, AddtiendaComponent, ModalBienvenidaComponent],
   templateUrl: './mapa.component.html',
   styleUrl: './mapa.component.css'
 })
@@ -43,6 +44,15 @@ constructor (private tiendaService: TiendaService, private fb: FormBuilder, priv
 private initialCoords: LatLng = latLng(43.4628, -3.8050);
   private initialZoom = 15;
 
+  mostrarModalBienvenida = true;
+
+  cerrarModalBienvenida(): void {
+    this.mostrarModalBienvenida = false;
+    //guardar en el localStorage asi no se muestra otra vez para el mismo user 
+    localStorage.setItem('modalBienvenidaMostrado', 'true');
+  }
+
+
 
   ngOnInit(): void {
     this.addStoreForm = this.fb.group({
@@ -56,6 +66,8 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
      this.filteredResultsSubscription = this.mService.resultadosFiltrado$.subscribe(
       results => this.handleFilteredResults(results)
     );
+    const modalBienvenidaMostrado = localStorage.getItem('modalBienvenidaMostrado');
+    this.mostrarModalBienvenida = modalBienvenidaMostrado !== 'true';
 
   }
 

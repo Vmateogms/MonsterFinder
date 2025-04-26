@@ -47,14 +47,25 @@ export class ViewTiendaComponent implements OnInit{
     const group: { [key: string]: FormControl } = {};
     
     this.allMonsters.forEach(monster => {
-      // comprobar si la monster esta ya en la tienda
-      const isInStore = this.tienda.monsters.some(m => m.monster.id === monster.id);
+
+      const existingMonster = this.tienda.monsters.find(m => m.monster.id === monster.id);
+      const isInStore = !!existingMonster;
       
       // crear un nuevo form
       group[`monster_${monster.id}`] = new FormControl(isInStore);
       group[`price_${monster.id}`] = new FormControl(
         isInStore ? this.getExistingPrice(monster.id) : '', 
         [Validators.min(0)]
+      );
+      group[`discount_${monster.id}`] = new FormControl(
+        isInStore ? existingMonster?.descuento : false
+      );
+      group[`discount_price_${monster.id}`] = new FormControl(
+        isInStore && existingMonster.descuento ? existingMonster.precioDescuento : '',
+        [Validators.min(0)]
+      );
+      group[`nevera_${monster.id}`] = new FormControl(
+        isInStore ? existingMonster.enNevera : false
       );
     });
 
@@ -77,16 +88,26 @@ export class ViewTiendaComponent implements OnInit{
   }
 
   saveMonsters() {
-    const updates = this.allMonsters
-      .filter(monster => this.getMonsterControl(monster).value)
-      .map(monster => ({
+  const updates = this.allMonsters
+    .filter(monster => this.getMonsterControl(monster).value)
+    .map(monster => {
+      const hasDiscount = this.getDiscountControl(monster).value;
+      return {
         monsterId: monster.id,
-        precio: this.getPriceControl(monster).value || 0
-      }));
+        precio: this.getPriceControl(monster).value || 0,
+        descuento: hasDiscount,
+        precioDescuento: hasDiscount ? this.getDiscountPriceControl(monster).value : null,
+        enNevera: this.getNeveraControl(monster).value
+      };
+    });
+
 
     this.tiendaMonsterService.updateTiendaMonsters(this.tienda.id, updates)
       .subscribe({
-        next: () => {
+        next: (tiendaActualizada) => {
+          
+          
+          this.tienda = tiendaActualizada ;
           this.viewMode = 'view';
         },
         error: (err) => {
@@ -102,4 +123,17 @@ export class ViewTiendaComponent implements OnInit{
   cancelEdit() {
     this.viewMode = 'view';
   }
+
+  getNeveraControl(monster: IMonster): FormControl {
+    return this.monsterEditForm.get(`nevera_${monster.id}`) as FormControl;
+  }
+  
+  getDiscountControl(monster: IMonster): FormControl {
+    return this.monsterEditForm.get(`discount_${monster.id}`) as FormControl;
+  }
+  
+  getDiscountPriceControl(monster: IMonster): FormControl {
+    return this.monsterEditForm.get(`discount_price_${monster.id}`) as FormControl;
+  }
+
 }

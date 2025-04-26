@@ -9,4 +9,17 @@
     padding: 8px 16px;
   }
 
+  .error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
   
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  input.ng-invalid.ng-touched {
+    border-color: #dc3545;
+  }

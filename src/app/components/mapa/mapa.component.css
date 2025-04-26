@@ -1,16 +1,13 @@
 
+/* Antiguo map  
 .map-container {
   height: calc(100vh - 20px);
   width: calc(100% - 20px);
   margin: 10px;
   border: 1px solid #ccc; 
   position: relative;
-}
-  
-  .map {
-    height: 100%;
-    width: 100%;
-  }
+} */
+
   
   .info-window {
     position: absolute;
@@ -100,14 +97,6 @@
     font-size: 14px;
     color: #333;
   }
-
-
-
-
-
-nuevo
-
-/* Agregar a mapa.component.css */
 
 .map-container {
   position: relative;

@@ -11,15 +11,30 @@
             <div>
               <strong>{{ monsterItem.monster.nombre }}</strong>
               @if (monsterItem.descuento && monsterItem.precioDescuento) {
-                <p>
-                  Precio original: <span class="original-price">{{ monsterItem.precio }}€</span>
-                  <br>
-                  Precio oferta: <span class="discount-price-yellow">{{ monsterItem.precioDescuento }}€</span>
-                  <span class="discount-badge">¡EN OFERTA!</span>
-                </p>
+                <div class="price-info text-center">
+                  <p>
+                    Precio original: <span class="original-price">{{ monsterItem.precio }}€</span>
+                    <br>
+                    Precio oferta: <span class="discount-price-yellow">{{ monsterItem.precioDescuento }}€</span>
+                  </p>
+                  <div class="badge-container">
+                    <span class="discount-badge">¡EN OFERTA!</span>
+                    @if (monsterItem.enNevera) {
+                      <span class="badge-nevera bg-primary text-white">¡EN NEVERA!</span>
+                    }
+                  </div>
+                </div>
               } @else {
-                <p>Precio: {{ monsterItem.precio }}€</p>
+                <div class="price-info text-center">
+                  <p>Precio: {{ monsterItem.precio }}€</p>
+                  @if (monsterItem.enNevera) {
+                    <div class="badge-container">
+                      <span class="badge-nevera bg-primary text-white">¡EN NEVERA!</span>
+                    </div>
+                  }
+                </div>
               }
+              
             </div>
           </div>
         }

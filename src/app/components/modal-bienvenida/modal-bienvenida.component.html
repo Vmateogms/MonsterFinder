@@ -1,0 +1,23 @@
+<div class="model-backdrop" (click)="cerrarModal($event)">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h2>¡Bienvenido a MonsterFinder!</h2>
+            <button class="close-button" (click)="cerrarModal()">X</button>
+        </div>
+        <div class="modal-body">
+            <img src="/resourcesGit/monstermapa.png" alt="logo de monster mirando un mapa">
+            <p>Encuentra las Monster Energy más baratas en tu zona y contribuye compartiendo precios con la comunidad</p>
+            <h3>Como usar la aplicacion:</h3>
+            <ul>
+                <li><strong>📍 Localización:</strong> Activa tu ubicación con un clic en el checkbox del pin en la esquina superior izquierda para ver las tiendas cercanas.</li>
+                <li><strong>🔎 Explorar tiendas:</strong> Navega por el mapa y haz clic en los pines para ver los productos y precios disponibles en cada tienda.</li>
+                <li><strong>📋 Tiendas cercanas:</strong> Una vez activada la localizacion, usa el botón azul en la esquina inferior derecha para mostrar una lista de las tiendas más próximas a ti y la distancia hasta ellas.</li>
+                <li><strong>➕ Añadir tiendas:</strong> Pulsa "Añadir tienda" en la parte superior derecha para contribuir con nuevos establecimientos al mapa.</li>
+                <li><strong>✏️ Actualizar precios:</strong> Colabora con la comunidad actualizando productos y precios en las tiendas existentes con los botones de Editar y Ver.</li>
+            </ul>
+        </div>
+        <div class="modal-footer">
+            <button class="start-button" (click)="cerrarModal()">¡Empezar!</button>
+        </div>
+    </div>
+</div>
