@@ -24,6 +24,14 @@ datos en MySQL.
 
 ## Modo de uso
 
+#### Activar ubicación
+Arriba a la izquierda del mapa podras ver un checkbox con un pin donde, si clickeas una sola vez,
+te llevara automaticamente a tu ubicacion "exacta", donde podras **consultar las tiendas mas cercanas**.
+
+#### Tiendas cercanas
+Una vez se ha activado la ubicacion en tiempo real, podras ver un boton azul abajo a la derecha, con el que
+podras mostrar o ocultar las tiendas mas cercanas a ti y la distancia hasta estas.
+
 #### Añadir tiendas
 El mapa (https://leafletjs.com/) tiene un botón arriba a la derecha "Añadir tienda" por el
 que, el usuario será capaz de añadir tiendas al mapa, un pequeño formulario preguntando
@@ -61,10 +69,10 @@ usuario y automáticamente borrar toda participación de esta en la pagina.
 ---
 
 **Abril-Mayo**  
-- Añadir Geolocalización  
+- Añadir Geolocalización  ✅
 - Filtros por rango de productos  
 - Más Productos  
-- Productos del tiempo o fríos
+- Productos del tiempo o fríos ✅
 - Usuarios
    
 
