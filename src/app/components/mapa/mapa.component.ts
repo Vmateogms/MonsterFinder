@@ -25,8 +25,8 @@ export class MapaComponent implements OnInit, AfterViewInit{
 
 private map! : Map;
 private markers: L.Marker[] = [];
-private userLocationMarker: L.Marker | null = null;
-private highlightedMarker: L.CircleMarker | null = null;
+userLocationMarker: L.Marker | null = null;
+private highlightedMarker: L.Marker | L.CircleMarker | null = null;
 selectedTienda: ITienda | null = null;
 tiendas: any[] = [];
 addStoreForm!: FormGroup;
@@ -37,9 +37,22 @@ watchId: number | null = null;
 filteredResultsSubscription: Subscription | null = null;
 panelVisible: boolean = false; 
 tiendasCercanas = true; 
+mapaInicializado = false;
+mapaInitPromesa: Promise<void> | null = null;
+ultimoMarkerClickeado: L.Marker | null = null;
 
-constructor (private tiendaService: TiendaService, private fb: FormBuilder, private cservice: CommunicationService, private mService: MonsterService) {}
+constructor (
+  private tiendaService: TiendaService, 
+  private fb: FormBuilder, 
+  private cservice: CommunicationService, 
+  private mService: MonsterService) 
+  {
+    this.mapaInitPromesa = new Promise<void>((resolve) => {
+      this.mapaInitResolver = resolve;
+    })
+  }
 
+  private mapaInitResolver!: (value: void | PromiseLike<void>) => void;
 
 //Cordenadas Santander
 private initialCoords: LatLng = latLng(43.4628, -3.8050);
@@ -60,7 +73,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
       latitud: ['', Validators.required],
       longitud: ['', Validators.required]
     })
-    this.cargarTiendas();
+    
     this.cservice.updateMap$.subscribe(() => this.cargarTiendas());
     this.mService.registerMapaComponent(this);
      // Suscribirse a resultados filtrados
@@ -73,6 +86,8 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     //ajustes visuales
     this.ajustarAlturaMapa();
     window.addEventListener('resize', this.ajustarAlturaMapa.bind(this))
+
+    this.cargarTiendas();
   }
 
   handleFilteredResults(results: any[]): void {
@@ -83,23 +98,36 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     
     // Eliminar cualquier resaltado anterior
     this.clearHighlights();
+
+    if (!this.mapaInicializado) return;
     
-    // Resaltar las tiendas en los resultados
+    if(!this.mapaInicializado) {
+     this.mapaInitPromesa?.then(() => {
+      this.highlightTiendasFiltradas(storeIds, results)
+     }) ;
+     return;
+    }
+  }
+
+  highlightTiendasFiltradas(storeIds: any[], results: any[]): void {
+     // Resaltar las tiendas en los resultados
     storeIds.forEach(id => {
       const tienda = this.tiendas.find(t => t.id === id);
       if (tienda) {
         this.highlightStore(tienda);
       }
     });
-    
-    // Si solo hay un resultado, centramos el mapa en esa tienda
-    if (results.length === 1) {
+
+     // Si solo hay un resultado, centramos el mapa en esa tienda
+      if (results.length === 1) {
       const tienda = this.tiendas.find(t => t.id === results[0].tiendaId);
       if (tienda) {
         this.centerMapOnStore(tienda);
       }
     }
   }
+
+
 
   ngAfterViewInit(): void {
     this.ajustarAlturaMapa();
@@ -127,8 +155,15 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
           .subscribe((tiendas: ITienda[]) => {
             console.log('Tiendas recibidas:', tiendas);
             this.tiendas = tiendas;
-            this.addMarkers();
-
+            if (this.mapaInicializado && this.map) {
+              this.addMarkers();
+            } else {
+              this.mapaInitPromesa?.then(()=> {
+                if (this.map) {
+                  this.addMarkers();
+                }
+              })
+            }
             //si la localizacion esta ya disponible , actualizamos las distancias
             if (this.userLocation) {
               this.actualizarDistanciaTiendas();
@@ -141,17 +176,27 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     console.log('Inicializando mapa con', this.tiendas.length, 'tiendas');
     this.map = map('map', {
       center: this.initialCoords,
-      zoom: this.initialZoom
+      zoom: this.initialZoom,
+      zoomControl: false
     });
 
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
-      attribution: '© OpenStreetMap contributors'
+      attribution: 'MonsterFinder'
     }).addTo(this.map);
 
     setTimeout(() => {
       this.map.invalidateSize();
+      this.mapaInicializado = true;
+
+      if (this.mapaInitResolver) {
+        this.mapaInitResolver();
+      }
+
+      if (this.tiendas.length > 0) {
+        this.addMarkers();
+      }
     }, 100);
   }
 
@@ -292,7 +337,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
 
     //crear un icono customizado para la localizacion
     const userIcon = new L.DivIcon({
-      className: 'monster-marker', // Just a basic class name
+      className: 'monster-marker', 
       html: `<img src="assets/monsterconducir.png" style="width:60px; height:60px;">`,
       iconSize: [60, 60],
       iconAnchor: [30, 30]
@@ -368,24 +413,32 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
       
       this.clearHighlights();
 
-      // Crear un círculo resaltado alrededor del marcador
+      //Icono rojo highlight tienda seleccionada
+      const redIcon = new L.Icon({
+        iconUrl: 'assets/marker-icon-red.png',
+        iconRetinaUrl: 'assets/marker-icon-2x-red.png',
+        shadowUrl: 'assets/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+
       const latlng = latLng(tienda.latitud, tienda.longitud);
-      const highlightCircle = L.circleMarker(latlng, {
-        radius: 30,
-        color: '#4285F4',
-        fillColor: '#4285F4',
-        fillOpacity: 0.3,
-        weight: 2
-      }).addTo(this.map);
-      
-      // Guardar referencia para poder eliminarlo después
-      this.highlightedMarker = highlightCircle;
+      const highlightMarker = L.marker(latlng, {
+        icon: redIcon,
+        zIndexOffset: 1000  // Para asegurarse de que aparezca encima de otros marcadores
+      }).addTo(this.map)
+      .on('click', () => this.showTiendaInfo(tienda));
+
+      // Guardar referencia para poder eliminarlo despues
+      this.highlightedMarker = highlightMarker as any;
       
       // Mostrar información de la tienda
       this.showTiendaInfo(tienda);
     }
     
-    // Método para centrar el mapa en una tienda específica
+    // Metodo para centrar el mapa en una tienda especifica
     centerMapOnStore(tienda: ITienda): void {
       if (!tienda || !this.map) return;
       
@@ -406,6 +459,10 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     }
 
   private addMarkers(): void {
+    if (!this.map || !this.mapaInicializado) {
+      console.warn('Map not initialized yet, cannot add markers');
+      return;
+    }
     // Limpiar marcadores existentes
     this.markers.forEach(marker => marker.removeFrom(this.map));
     this.markers = [];

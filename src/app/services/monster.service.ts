@@ -48,15 +48,19 @@ resultadosFiltrado$ = this.resultadosFiltradoSubject.asObservable();
     // Método para filtrar monsters
     filtrarMonsters(nombreBusqueda: string, ordenPrecio: string, soloEnNevera: boolean = false): Observable<any[]> {
       console.log(`Filtrando con URL: ${this.apiUrl}/filtrar?nombre=${nombreBusqueda}&ordenPrecio=${ordenPrecio}`);
+      const url = `${this.apiUrl}/filtrar`;
       
-      let url = `${environment.apiUrl}/api/tiendas/monsters/filtrar?nombre=${encodeURIComponent(nombreBusqueda)}`;
+      console.log(`Filtrando con URL: ${url}?nombre=${nombreBusqueda}&ordenPrecio=${ordenPrecio}`);
 
-      if (soloEnNevera) {
-        url += '&enNevera=true';
-      }
-  
+      let params = new HttpParams()
+      .set('nombre', nombreBusqueda)
+      .set('ordenPrecio', ordenPrecio);
+    
+    if (soloEnNevera) {
+      params = params.set('enNevera', soloEnNevera.toString());
+    }
       // Corregimos la URL del endpoint
-      return this.http.get<any[]>(url).pipe(
+      return this.http.get<any[]>(url, {params}).pipe(
       map(resultados => {
         // Ordenar resultados
         if (ordenPrecio === 'precioAscendente') {
