@@ -49,15 +49,27 @@ export class MonsterFilterComponent implements OnInit, OnDestroy {
     }
 
     console.log(`Buscando "${this.nombreBusqueda}" ordenado por ${this.ordenPrecio}`);
-    const searchSub = this.mservice.filtrarMonsters(this.nombreBusqueda, this.ordenPrecio)
+    const searchSub = this.mservice.filtrarMonsters(this.nombreBusqueda, this.ordenPrecio,this.filterEnNevera)
       .subscribe(resultado => {
         console.log('Resultados del filtrado:', resultado);
         this.filteredMonsters = resultado;
+        this.filteredMonsters = resultado.map(item => {
+          return {
+            ...item,
+            nombreMonster: item.monster?.nombre || item.nombre,
+            sabor: item.monster?.sabor,
+            oferta: item.descuento,
+            enNevera: item.enNevera
+          }
+        });
         // Emitir evento para actualizar el mapa
         this.mservice.actualizarResultadosFiltrados(resultado);
 
+        if (this.filteredMonsters.length > 0) {
+          this.isFilterVisible = false;
+        }
         // Si hay resultados, cerramos el panel de filtro para mostrar mejor el mapa
-        if (resultado && resultado.length > 0) {
+        if (resultado.length > 0) {
           this.isFilterVisible = false;
           
           // Si el usuario tiene la geolocalización activa y hay resultados,

@@ -9,6 +9,8 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    overflow-y: auto; /* Permite scroll vertical */
+    padding: 20px 0;
 }
 
 .modal-content {
@@ -17,8 +19,34 @@
     border-radius: 12px;
     width: 90%;
     max-width: 550px;
+    max-height: 90vh; /* Limita la altura máxima */
+    overflow-y: auto; /* Permite scroll dentro del modal */
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     animation: fadeIn 0.5s;
+    margin: auto; /* Centra el modal si es más pequeño que la pantalla */
+}
+
+  /* Mejoras para móviles */
+@media (max-width: 480px) {
+    .modal-content {
+        width: 95%;
+        max-height: 85vh; /* Un poco más pequeño en móviles */
+        margin: 10px auto; /* Añade margen arriba/abajo */
+    }
+    
+.modal-body {
+    padding: 15px;
+    font-size: 14px;
+    }
+    
+.modal-body li {
+    margin-bottom: 8px;
+    }
+    
+    /* Reduce el tamaño de la imagen en móviles */
+.modal-body img {
+    max-width: 120px;
+    }
 }
 
 @keyframes fadeIn {

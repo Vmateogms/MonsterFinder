@@ -11,12 +11,13 @@ import { AddtiendaComponent } from "../addtienda/addtienda.component";
 import { CommunicationService } from '../../services/communication.service';
 import { MonsterService } from '../../services/monster.service';
 import { ModalBienvenidaComponent } from "../modal-bienvenida/modal-bienvenida.component";
+import { MonsterFilterComponent } from "../monster-filter/monster-filter.component";
 
 
 @Component({
   selector: 'app-mapa',
   standalone: true,
-  imports: [TiendaDetailComponent, LeafletModule, CommonModule, AddtiendaComponent, ModalBienvenidaComponent],
+  imports: [TiendaDetailComponent, LeafletModule, CommonModule, AddtiendaComponent, ModalBienvenidaComponent, MonsterFilterComponent],
   templateUrl: './mapa.component.html',
   styleUrl: './mapa.component.css'
 })
@@ -69,6 +70,9 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     const modalBienvenidaMostrado = localStorage.getItem('modalBienvenidaMostrado');
     this.mostrarModalBienvenida = modalBienvenidaMostrado !== 'true';
 
+    //ajustes visuales
+    this.ajustarAlturaMapa();
+    window.addEventListener('resize', this.ajustarAlturaMapa.bind(this))
   }
 
   handleFilteredResults(results: any[]): void {
@@ -98,6 +102,9 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
   }
 
   ngAfterViewInit(): void {
+    this.ajustarAlturaMapa();
+
+    setTimeout(() => {
     this.initMap();
     //comprobamos si la geolocalizacion esta supported por el navegador
     if('geolocation' in navigator) {
@@ -105,7 +112,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     } else {
       console.warn('Geolocation is not supported by this browser.')
     }
-
+  }, 100);
   }
 
   private cargarTiendas(): void {
@@ -142,6 +149,10 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
       maxZoom: 18,
       attribution: '© OpenStreetMap contributors'
     }).addTo(this.map);
+
+    setTimeout(() => {
+      this.map.invalidateSize();
+    }, 100);
   }
 
   private addLocateControl(): void {
@@ -281,7 +292,6 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
 
     //crear un icono customizado para la localizacion
     const userIcon = new L.DivIcon({
-      
       className: 'monster-marker', // Just a basic class name
       html: `<img src="assets/monsterconducir.png" style="width:60px; height:60px;">`,
       iconSize: [60, 60],
@@ -296,7 +306,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
       .addTo(this.map)
       .openPopup();
 
-    //   // Añade también un círculo de precisión 
+    //   // círculo de precisión 
     //  const accuracyCircle = L.circle(location, {
     //   radius: 40, // Radio en metros 
     //   weight: 1,
@@ -333,7 +343,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     
     // encontrar tiendas que tengan monster
     const storesWithMonster = this.nearestStores.filter(tienda => 
-      tienda.monsters.some(m => m.monster.id === monsterId)
+      tienda.monsters.some((m: any) => m.monster.id === monsterId)
     );
     
     // filtrar por precio
@@ -356,6 +366,8 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     highlightStore(tienda: ITienda): void {
       if (!tienda || !this.map) return;
       
+      this.clearHighlights();
+
       // Crear un círculo resaltado alrededor del marcador
       const latlng = latLng(tienda.latitud, tienda.longitud);
       const highlightCircle = L.circleMarker(latlng, {
@@ -401,8 +413,8 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     // Configurar iconos
     delete (L.Icon.Default.prototype as any)._getIconUrl;
     L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'assets/marker-icon-2x.png',
-      iconUrl: 'assets/marker-icon.png',
+      iconRetinaUrl: 'assets/marker-icon-2x-green.png',
+      iconUrl: 'assets/marker-icon-green.png',
       shadowUrl: 'assets/marker-shadow.png',
     });
 
@@ -446,10 +458,35 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     })
   }
 
+  //metodo estetico
+  ajustarAlturaMapa(): void {
+    setTimeout(() => {
+      const mapContainer = document.querySelector('.map-container') as HTMLElement;
+      if (mapContainer) {
+        const alturaVentana = window.innerHeight
+        mapContainer.style.height = `${alturaVentana}px`
+
+        if(this.map){
+          this.map.invalidateSize();
+        }
+
+      }
+    },100)  // Un pequeño retraso para asegurar que el DOM está listo
+
+  }
+
   ngOnDestroy(): void {
     if (this.watchId !== null) {
       navigator.geolocation.clearWatch(this.watchId);
     }
+
+    window.removeEventListener('resize', this.ajustarAlturaMapa.bind(this));
+
+    // Desuscribir de los observables
+  if (this.filteredResultsSubscription) {
+    this.filteredResultsSubscription.unsubscribe();
+  }
+
   }
 
 

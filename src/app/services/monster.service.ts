@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { IMonster } from '../interfaces/imonster';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from './environment.prod';
-import { catchError, Observable, of, Subject, tap } from 'rxjs';
+import { catchError, Observable, of, Subject, tap ,map } from 'rxjs';
 import { MapaComponent } from '../components/mapa/mapa.component';
 
 @Injectable({
@@ -11,10 +11,11 @@ import { MapaComponent } from '../components/mapa/mapa.component';
 export class MonsterService {
 
 private apiUrl = `${environment.apiUrl}/monsters`; // CAMBIAR A ENVIROMENT UN AVEZ HECHAS LAS PRUEBAS 
-private resultadosFiltradoSubject = new Subject<any[]>();
-//private mapaComponentSubject = new Subject<MapaComponent>();
-private mapaComponentRef: MapaComponent | null = null;
 
+//private mapaComponentSubject = new Subject<MapaComponent>();
+private mapaComponent: MapaComponent | null = null;
+
+private resultadosFiltradoSubject = new Subject<any[]>();
 // Observable que utilizan otros componentes para recibir resultados de filtrado
 resultadosFiltrado$ = this.resultadosFiltradoSubject.asObservable();
 
@@ -22,18 +23,17 @@ resultadosFiltrado$ = this.resultadosFiltradoSubject.asObservable();
   constructor(private http: HttpClient) { }
 
    // Método para registrar el componente de mapa
-    registerMapaComponent(mapaComponent: MapaComponent): void {
-      this.mapaComponentRef = mapaComponent;
-      console.log('Mapa component registered with MonsterService');
+    registerMapaComponent(component: MapaComponent): void {
+      this.mapaComponent = component;
   }
 
     // Método para acceder al componente de mapa registrado
     getMapaComponent(): MapaComponent | null {
-      return this.mapaComponentRef;
+      return this.mapaComponent;
     }
   
 
-  getAllMonsters(): Observable<any[]> {
+  getAllMonsters(): Observable<IMonster[]> {
     return this.http.get<any[]>(this.apiUrl)
       .pipe(
         tap(data => console.log('Monsters obtenidos:', data)),
@@ -46,22 +46,40 @@ resultadosFiltrado$ = this.resultadosFiltradoSubject.asObservable();
 
 
     // Método para filtrar monsters
-    filtrarMonsters(nombre: string, ordenPrecio: string): Observable<any[]> {
-      console.log(`Filtrando con URL: ${this.apiUrl}/filtrar?nombre=${nombre}&ordenPrecio=${ordenPrecio}`);
+    filtrarMonsters(nombreBusqueda: string, ordenPrecio: string, soloEnNevera: boolean = false): Observable<any[]> {
+      console.log(`Filtrando con URL: ${this.apiUrl}/filtrar?nombre=${nombreBusqueda}&ordenPrecio=${ordenPrecio}`);
       
-      const params = new HttpParams()
-        .set('nombre', nombre)
-        .set('ordenPrecio', ordenPrecio);
-        
+      let url = `${environment.apiUrl}/api/tiendas/monsters/filtrar?nombre=${encodeURIComponent(nombreBusqueda)}`;
+
+      if (soloEnNevera) {
+        url += '&enNevera=true';
+      }
+  
       // Corregimos la URL del endpoint
-      return this.http.get<any[]>(`${this.apiUrl}/monsters/filtrar`, { params })
-        .pipe(
-          catchError(error => {
-            console.error('Error al filtrar monsters:', error);
-            return of([]);
-          })
-        );
-    }
+      return this.http.get<any[]>(url).pipe(
+      map(resultados => {
+        // Ordenar resultados
+        if (ordenPrecio === 'precioAscendente') {
+          return resultados.sort((a, b) => {
+            // Si hay precio con descuento, usar ese
+            const precioA = a.descuento ? a.precioDescuento : a.precio;
+            const precioB = b.descuento ? b.precioDescuento : b.precio;
+            return precioA - precioB;
+          });
+        } else {
+          return resultados.sort((a, b) => {
+            const precioA = a.descuento ? a.precioDescuento : a.precio;
+            const precioB = b.descuento ? b.precioDescuento : b.precio;
+            return precioB - precioA;
+          });
+        }
+      }),
+      catchError(error => {
+        console.error('Error filtrando monsters:', error);
+        return of([]);
+      })
+    );
+  }
 
   // Método para notificar a los componentes suscritos sobre nuevos resultados
   actualizarResultadosFiltrados(resultados: any[]): void {
@@ -70,20 +88,20 @@ resultadosFiltrado$ = this.resultadosFiltradoSubject.asObservable();
   }
 
   findNearestStoreWithMonster(monsterId: number): any {
-    if (!this.mapaComponentRef) {
+    if (!this.mapaComponent) {
       console.warn('Mapacomponent no registrado');
       return null;
     }
-    return this.mapaComponentRef.findNearestStoreWithMonster(monsterId);
+    return this.mapaComponent.findNearestStoreWithMonster(monsterId);
   }
 
   highlightStoreOnMap(tienda: any): void {
-    if (!this.mapaComponentRef) {
+    if (!this.mapaComponent) {
       console.warn('MapaComponent no registrado');
       return;
     }
     
-    this.mapaComponentRef.highlightStore(tienda);
+    this.mapaComponent.highlightStore(tienda);
   }
 
 }

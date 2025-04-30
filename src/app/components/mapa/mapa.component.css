@@ -98,20 +98,42 @@
     color: #333;
   }
 
-.map-container {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-}
 
-.map {
-  width: 100%;
-  height: 100%;
-}
+
+  .map-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    /* El height se controlará completamente por TypeScript */
+  }
+  
+  .monster-filter-container {
+    position: absolute;
+    top: 5px;
+    left: 57%;
+  }
+
+  @media (max-width: 768px) {
+    
+    
+    .tiendasCercanas {
+      bottom: 70px; 
+      right: 10px;
+      width: auto;
+      font-size: 12px;
+      padding: 8px 12px;
+    }
+  }
+  
+  .map {
+    width: 100%;
+    height: 100%;
+  }
 
 .tiendasCercanas {
   position: absolute;
-  bottom: 20px;
+  bottom: 70px;
   right: 20px;
   background-color: #2F86CC;
   border-radius: 8px;
@@ -123,6 +145,28 @@
   transition: all 0.3s ease;
 }
 
+@media (max-width: 480px) {
+  .nearest-stores-panel {
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+    font-size: 14px;
+  }
+  
+  .store-item {
+    padding: 8px;
+  }
+  
+  .nearest-stores-list {
+    max-height: 200px; /* Reducir altura en móviles */
+  }
+  
+  .panel-header h3 {
+    font-size: 16px;
+  }
+}
 
 .nearest-stores-panel {
   position: absolute;

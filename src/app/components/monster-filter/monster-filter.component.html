@@ -1,7 +1,7 @@
 <div class="filter-container">
   <!-- Botón para desplegar/colapsar el panel de filtro -->
   <button class="btn-filter-toggle" (click)="toggleFilterPanel()">
-    <i class="fas fa-filter">Filtrar Monsters</i> 
+    <i class="fas fa-filter"></i> Filtrar Monsters
   </button>
   
   <!-- Panel de filtros que se muestra/oculta -->
@@ -31,7 +31,7 @@
       </select>
     </div>
 
-    div class="form-group">
+    <div class="form-group">
       <label class="checkbox-label">
         <input type="checkbox" [(ngModel)]="filterEnNevera"> Solo disponibles en nevera
       </label>
@@ -45,8 +45,6 @@
     
     <button class="btn btn-primary" (click)="buscarPorFiltro()">Buscar</button>
   </div>
-
-  
   
   <!-- Panel de resultados -->
   @if (filteredMonsters.length > 0) {
@@ -84,4 +82,4 @@
       }
     </div>
   }
-<!--</div>-->
+</div>

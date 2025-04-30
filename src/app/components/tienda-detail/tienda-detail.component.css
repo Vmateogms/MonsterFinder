@@ -1,3 +1,27 @@
+/* Para el modal de detalles de tienda */
+@media (max-width: 768px) {
+  app-tienda-detail .modal-content {
+    width: 95%;
+    max-height: 90vh;
+    margin: 5px auto;
+    overflow-y: auto;
+  }
+  
+  .monster-item, .monster-edit-item {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .price-controls {
+    width: 100%;
+    margin-top: 10px;
+  }
+  
+  .monster-item img {
+    margin-bottom: 10px;
+  }
+}
 
 .modal-overlay {
   position: fixed;
