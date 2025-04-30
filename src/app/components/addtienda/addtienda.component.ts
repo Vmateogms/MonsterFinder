@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, Injectable } from '@angular/core';
+import { Component, EventEmitter, Injectable, Output } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TiendaService } from '../../services/tienda.service';
 import { CommunicationService } from '../../services/communication.service';
@@ -18,6 +18,7 @@ export class AddtiendaComponent {
 
   addStoreForm: any;
   showModal = false;
+  @Output() activateMapMode = new EventEmitter<void>();
 
   constructor (private fb: FormBuilder, private tService: TiendaService, private cservice: CommunicationService) {
     this.addStoreForm = this.fb.group({
@@ -64,6 +65,31 @@ export class AddtiendaComponent {
         }
       });
     }
+  }
+
+  startAddStoreMapMode() {
+    // Cerrar el modal completamente
+    const modalElement = document.getElementById('addStoreModal');
+    if (modalElement) {
+      try {
+        const modal = Modal.getInstance(modalElement);
+        if (modal) {
+          modal.hide();
+        }
+      } catch (error) {
+        console.error('Error closing modal:', error);
+      }
+    }
+    
+    // Limpieza rigurosa del modal
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Emitir evento
+    console.log('Emitiendo evento activateMapMode');
+    this.activateMapMode.emit();
   }
 }
  

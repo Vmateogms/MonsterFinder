@@ -1,6 +1,6 @@
-import { Component, AfterViewInit, OnInit } from '@angular/core';
+import { Component, AfterViewInit, OnInit, OnDestroy } from '@angular/core';
 import { ITienda } from '../../interfaces/itienda';
-import L, { LatLng, latLng, LeafletMouseEvent, Map, map, marker, tileLayer,  Icon, DivIcon } from 'leaflet';
+import L, { LatLng, latLng, LeafletMouseEvent, Map, marker, tileLayer, Icon, DivIcon } from 'leaflet';
 import { TiendaDetailComponent } from "../tienda-detail/tienda-detail.component";
 import { LeafletModule } from '@asymmetrik/ngx-leaflet';
 import { CommonModule } from '@angular/common';
@@ -13,7 +13,6 @@ import { MonsterService } from '../../services/monster.service';
 import { ModalBienvenidaComponent } from "../modal-bienvenida/modal-bienvenida.component";
 import { MonsterFilterComponent } from "../monster-filter/monster-filter.component";
 
-
 @Component({
   selector: 'app-mapa',
   standalone: true,
@@ -21,171 +20,139 @@ import { MonsterFilterComponent } from "../monster-filter/monster-filter.compone
   templateUrl: './mapa.component.html',
   styleUrl: './mapa.component.css'
 })
-export class MapaComponent implements OnInit, AfterViewInit{
-
-private map! : Map;
-private markers: L.Marker[] = [];
-userLocationMarker: L.Marker | null = null;
-private highlightedMarker: L.Marker | L.CircleMarker | null = null;
-selectedTienda: ITienda | null = null;
-tiendas: any[] = [];
-addStoreForm!: FormGroup;
-nearestStores: ITienda[] = [];
-isLocating: boolean = false;
-userLocation: LatLng | null = null;
-watchId: number | null = null;
-filteredResultsSubscription: Subscription | null = null;
-panelVisible: boolean = false; 
-tiendasCercanas = true; 
-mapaInicializado = false;
-mapaInitPromesa: Promise<void> | null = null;
-ultimoMarkerClickeado: L.Marker | null = null;
-
-constructor (
-  private tiendaService: TiendaService, 
-  private fb: FormBuilder, 
-  private cservice: CommunicationService, 
-  private mService: MonsterService) 
-  {
-    this.mapaInitPromesa = new Promise<void>((resolve) => {
-      this.mapaInitResolver = resolve;
-    })
-  }
-
+export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
+  // Propiedades del mapa
+  private map!: Map;
+  private markers: L.Marker[] = [];
+  private highlightedMarker: L.Marker | L.CircleMarker | null = null;
+  private initialCoords: LatLng = latLng(43.4628, -3.8050);
+  private initialZoom = 15;
+  mapaInicializado = false;
+  private mapaInitPromesa: Promise<void>;
   private mapaInitResolver!: (value: void | PromiseLike<void>) => void;
 
-//Cordenadas Santander
-private initialCoords: LatLng = latLng(43.4628, -3.8050);
-  private initialZoom = 15;
+  // Propiedades de localizacion
+  userLocationMarker: L.Marker | null = null;
+  userLocation: LatLng | null = null;
+  watchId: number | null = null;
+  isLocating: boolean = false;
 
+  // Propiedades de tiendas
+  tiendas: ITienda[] = [];
+  selectedTienda: ITienda | null = null;
+  nearestStores: ITienda[] = [];
+  ultimoMarkerClickeado: L.Marker | null = null;
+  modoAnadirTiendas: boolean = false;
+  markerTemporal: L.Marker | null = null;
+  posicionDeNuevaTienda: LatLng | null = null;
+  mostrarFormNombre: boolean = false;
+  nuevaTiendaNombre: string = '';
+
+  // Propiedades de UI
+  panelVisible: boolean = false;
+  tiendasCercanas = true;
   mostrarModalBienvenida = true;
+  addStoreForm!: FormGroup;
 
-  cerrarModalBienvenida(): void {
-    this.mostrarModalBienvenida = false;
-    //guardar en el localStorage asi no se muestra otra vez para el mismo user 
-    localStorage.setItem('modalBienvenidaMostrado', 'true');
+  // Subscripciones
+  private filteredResultsSubscription: Subscription | null = null;
+  private communicationSubscription: Subscription | null = null;
+
+  constructor(
+    private tiendaService: TiendaService,
+    private fb: FormBuilder,
+    private cservice: CommunicationService,
+    private mService: MonsterService
+  ) {
+    this.mapaInitPromesa = new Promise<void>((resolve) => {
+      this.mapaInitResolver = resolve;
+    });
   }
 
-
-
   ngOnInit(): void {
+    // Inicializar formulario
     this.addStoreForm = this.fb.group({
       latitud: ['', Validators.required],
       longitud: ['', Validators.required]
-    })
+    });
     
-    this.cservice.updateMap$.subscribe(() => this.cargarTiendas());
-    this.mService.registerMapaComponent(this);
-     // Suscribirse a resultados filtrados
-     this.filteredResultsSubscription = this.mService.resultadosFiltrado$.subscribe(
-      results => this.handleFilteredResults(results)
-    );
-    const modalBienvenidaMostrado = localStorage.getItem('modalBienvenidaMostrado');
-    this.mostrarModalBienvenida = modalBienvenidaMostrado !== 'true';
+    // Configurar suscripciones
+    this.setupSubscriptions();
+    
+    // Comprobar si se debe mostrar el modal de bienvenida
+    this.mostrarModalBienvenida = localStorage.getItem('modalBienvenidaMostrado') !== 'true';
 
-    //ajustes visuales
+    // Ajustes visuales
     this.ajustarAlturaMapa();
-    window.addEventListener('resize', this.ajustarAlturaMapa.bind(this))
+    window.addEventListener('resize', this.ajustarAlturaMapa.bind(this));
 
+    // Cargar tiendas
     this.cargarTiendas();
   }
-
-  handleFilteredResults(results: any[]): void {
-    if (!results || results.length === 0) return;
-    
-    // Si hay resultados, encontrar las tiendas correspondientes y resaltarlas
-    const storeIds = [...new Set(results.map(r => r.tiendaId))];
-    
-    // Eliminar cualquier resaltado anterior
-    this.clearHighlights();
-
-    if (!this.mapaInicializado) return;
-    
-    if(!this.mapaInicializado) {
-     this.mapaInitPromesa?.then(() => {
-      this.highlightTiendasFiltradas(storeIds, results)
-     }) ;
-     return;
-    }
-  }
-
-  highlightTiendasFiltradas(storeIds: any[], results: any[]): void {
-     // Resaltar las tiendas en los resultados
-    storeIds.forEach(id => {
-      const tienda = this.tiendas.find(t => t.id === id);
-      if (tienda) {
-        this.highlightStore(tienda);
-      }
-    });
-
-     // Si solo hay un resultado, centramos el mapa en esa tienda
-      if (results.length === 1) {
-      const tienda = this.tiendas.find(t => t.id === results[0].tiendaId);
-      if (tienda) {
-        this.centerMapOnStore(tienda);
-      }
-    }
-  }
-
-
 
   ngAfterViewInit(): void {
     this.ajustarAlturaMapa();
 
     setTimeout(() => {
-    this.initMap();
-    //comprobamos si la geolocalizacion esta supported por el navegador
-    if('geolocation' in navigator) {
-      this.addLocateControl();
-    } else {
-      console.warn('Geolocation is not supported by this browser.')
-    }
-  }, 100);
+      this.initMap();
+    }, 100);
   }
 
-  private cargarTiendas(): void {
-    console.log('Inicializando mapa...');
-    this.tiendaService.getTiendas()
-          .pipe(
-            catchError(error => {
-              console.error('Error cargando tiendas:', error);
-              return of ([]);
-            })
-          )
-          .subscribe((tiendas: ITienda[]) => {
-            console.log('Tiendas recibidas:', tiendas);
-            this.tiendas = tiendas;
-            if (this.mapaInicializado && this.map) {
-              this.addMarkers();
-            } else {
-              this.mapaInitPromesa?.then(()=> {
-                if (this.map) {
-                  this.addMarkers();
-                }
-              })
-            }
-            //si la localizacion esta ya disponible , actualizamos las distancias
-            if (this.userLocation) {
-              this.actualizarDistanciaTiendas();
-            }
+  ngOnDestroy(): void {
+    this.stopWatchingPosition();
+    window.removeEventListener('resize', this.ajustarAlturaMapa.bind(this));
+    
+    // Desuscribir de los observables
+    if (this.filteredResultsSubscription) {
+      this.filteredResultsSubscription.unsubscribe();
+    }
+    
+    if (this.communicationSubscription) {
+      this.communicationSubscription.unsubscribe();
+    }
+  }
 
-          });
+  // METODOS DE INICIALIZACION
+
+  private setupSubscriptions(): void {
+    // Suscripcion a actualizaciones del mapa
+    this.communicationSubscription = this.cservice.updateMap$.subscribe(() => 
+      this.cargarTiendas()
+    );
+    
+    // Registrar este componente en el servicio de monstruos
+    this.mService.registerMapaComponent(this);
+    
+    // Suscribirse a resultados filtrados
+    this.filteredResultsSubscription = this.mService.resultadosFiltrado$.subscribe(
+      results => this.handleFilteredResults(results)
+    );
   }
 
   private initMap(): void {
     console.log('Inicializando mapa con', this.tiendas.length, 'tiendas');
-    this.map = map('map', {
+    
+    // Crear el mapa
+    this.map = L.map('map', {
       center: this.initialCoords,
       zoom: this.initialZoom,
       zoomControl: false
     });
 
-
+    // Añadir capa base
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
       attribution: 'MonsterFinder'
     }).addTo(this.map);
 
+    // Añadir control de localizacion si esta disponible
+    if ('geolocation' in navigator) {
+      this.addLocateControl();
+    } else {
+      console.warn('Geolocation is not supported by this browser.');
+    }
+
+    // Finalizar inicializacion
     setTimeout(() => {
       this.map.invalidateSize();
       this.mapaInicializado = true;
@@ -195,7 +162,7 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
       }
 
       if (this.tiendas.length > 0) {
-        this.addMarkers();
+        this.renderMarkers();
       }
     }, 100);
   }
@@ -211,7 +178,8 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
         button.href = '#';
         button.title = 'Mostrar mi ubicacion';
         button.innerHTML = '<i class="fas fa-location-arrow">📍</i>';
-        if(!button.innerHTML.includes('fa-location-arrow')) {
+        
+        if (!button.innerHTML.includes('fa-location-arrow')) {
           button.innerHTML = '📍';
         }
 
@@ -220,249 +188,55 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
             this.locateUser();
           });
 
-          return container;
+        return container;
       }
     });
+    
     this.map.addControl(new customControl());
   }
 
-  locateUser(): void {
-    //indicador de carga
-    this.isLocating = true;
+  // METODOS DE CARGA DE DATOS
 
-    const loadingEl = document.createElement('div');
-    loadingEl.className = 'location-loader';
-    loadingEl.innerHTML = '';
-    document.body.appendChild(loadingEl);
-
-    if(navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude} = position.coords;
-          this.userLocation = latLng(latitude, longitude);
-
-          //Añadir o actualizar el marker del usuario
-          this.addUserLocationMarker(this.userLocation);
-
-          //centrar el mapa en la localizacion del usuario
-          this.map.setView(this.userLocation, 15);
-
-          //calcular distancias a todas las tiendas
-          this.actualizarDistanciaTiendas();
-
-          this.isLocating = false;
-          document.body.removeChild(loadingEl);
-
-          this.startWatchingPosition();
-        },
-        (error) => {
-          console.error( 'Error obteniendo localizacion' , error);
-          this.handleLocationError(error);
-          this.isLocating = false;
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+  private cargarTiendas(): void {
+    console.log('Cargando tiendas...');
+    
+    this.tiendaService.getTiendas()
+      .pipe(
+        catchError(error => {
+          console.error('Error cargando tiendas:', error);
+          return of([]);
+        })
+      )
+      .subscribe((tiendas: ITienda[]) => {
+        console.log('Tiendas recibidas:', tiendas);
+        this.tiendas = tiendas;
+        
+        // Actualizar marcadores según el estado del mapa
+        if (this.mapaInicializado && this.map) {
+          this.renderMarkers();
+        } else {
+          this.mapaInitPromesa.then(() => {
+            if (this.map) {
+              this.renderMarkers();
+            }
+          });
         }
-      );
-    } else {
-      console.error('Geolocalizacion no supported por el buscador');
-      this.isLocating = false;
-      document.body.removeChild(loadingEl);
-    }
-  }
-
-  startWatchingPosition(): void {
-    //limpiar cualquier vista existente
-    if (this.watchId !== null) {
-      navigator.geolocation.clearWatch(this.watchId);
-    }
-
-    //empezar una nueva vista
-    this.watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        const {latitude, longitude} = position.coords;
-        this.userLocation = latLng(latitude, longitude);
-
-        //actualizar el marcador de la posicion del usuario
-        this.addUserLocationMarker(this.userLocation);
-
-        //recalcular distancias
-        this.actualizarDistanciaTiendas();
-      },
-      (error) => {
-        console.error('Error watching position', error);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
-    );
-  }
-
-  stopWatchingPosition(): void {
-    if (this.watchId !== null) {
-      navigator.geolocation.clearWatch(this.watchId);
-      this.watchId = null;
-    }
-  }
-
-  handleLocationError(error: GeolocationPositionError): void {
-    let message = '';
-    switch (error.code) {
-      case error.PERMISSION_DENIED:
-      message = 'El usuario ha denegado el permiso para la geolocalizacion.';
-      break;
-      case error.POSITION_UNAVAILABLE:
-      message = 'La informacion de ubicacion no esta disponible.';
-      break  ;
-      case error.TIMEOUT:
-      message = 'La solicitud para obtener la ubicacion del usuario ha caducado';
-      break;
-      default:
-      message = 'Se ha producido un error desconocido.';
-      break;
-    }
-
-    alert (message);
-  }
-
-  addUserLocationMarker(location: LatLng): void {
-    //quitar marquer anterior si es que existiese
-    if ( this.userLocationMarker) {
-      this.map.removeLayer(this.userLocationMarker);
-    }
-
-    //crear un icono customizado para la localizacion
-    const userIcon = new L.DivIcon({
-      className: 'monster-marker', 
-      html: `<img src="assets/monsterconducir.png" style="width:60px; height:60px;">`,
-      iconSize: [60, 60],
-      iconAnchor: [30, 30]
-      
-    })
-
-    //añadir nuevo marcador 
-    this.userLocationMarker = L.marker(location, {
-      icon: userIcon,
-       zIndexOffset: 1000}) // zIndexOffset asegura que el marcador de usuario siempre esté encima
-      .addTo(this.map)
-      .openPopup();
-
-    //   // círculo de precisión 
-    //  const accuracyCircle = L.circle(location, {
-    //   radius: 40, // Radio en metros 
-    //   weight: 1,
-    //   color: '#4285F4',
-    //   fillColor: '#4285F480',
-    //   fillOpacity: 0.15
-    //   }).addTo(this.map);
-
-
-      console.log('Marcador de ubicación añadido en:', location);
-  }
-
-  actualizarDistanciaTiendas(): void {
-    if(!this.userLocation) return;
-
-    //calcular distancia del usuario a cada tienda
-    this.tiendas.forEach(tienda => {
-      const storeLocation = latLng(tienda.latitud, tienda.longitud);
-      // @ts-ignore - distance is available in LatLng
-      const distancia = this.userLocation.distanceTo(storeLocation) / 2000;
-      (tienda as any).distance = parseFloat(distancia.toFixed(2));
-    });
-
-    //filtrar tiendas por distancia
-    this.nearestStores = [...this.tiendas].sort((a, b) => 
-    (a as any).distance - (b as any).distance
-  );
-
-  console.log('Tiendas mas cercanas: ', this.nearestStores);
-  }
-
-  findNearestStoreWithMonster(monsterId: number): ITienda | null {
-    if (!this.userLocation || !this.nearestStores.length) return null;
-    
-    // encontrar tiendas que tengan monster
-    const storesWithMonster = this.nearestStores.filter(tienda => 
-      tienda.monsters.some((m: any) => m.monster.id === monsterId)
-    );
-    
-    // filtrar por precio
-    const sortedStores = storesWithMonster.sort((a, b) => {
-      const monsterA = a.monsters.find(m => m.monster.id === monsterId);
-      const monsterB = b.monsters.find(m => m.monster.id === monsterId);
-      
-      // obtener precio descontado si es posible si no normal 
-      const priceA = monsterA?.descuento ? monsterA.precioDescuento ?? monsterA.precio : monsterA?.precio ?? Infinity;
-      const priceB = monsterB?.descuento ? monsterB.precioDescuento ?? monsterB.precio : monsterB?.precio ?? Infinity;
-      
-      return priceA - priceB;
-    });
-    
-    // devolver la mejor opcion ( precio mas barato )
-    return sortedStores.length ? sortedStores[0] : null;
-  }
-
-    // Nuevo método para resaltar una tienda en el mapa
-    highlightStore(tienda: ITienda): void {
-      if (!tienda || !this.map) return;
-      
-      this.clearHighlights();
-
-      //Icono rojo highlight tienda seleccionada
-      const redIcon = new L.Icon({
-        iconUrl: 'assets/marker-icon-red.png',
-        iconRetinaUrl: 'assets/marker-icon-2x-red.png',
-        shadowUrl: 'assets/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
+        
+        // Actualizar distancias si hay localizacion
+        if (this.userLocation) {
+          this.actualizarDistanciaTiendas();
+        }
       });
+  }
 
-      const latlng = latLng(tienda.latitud, tienda.longitud);
-      const highlightMarker = L.marker(latlng, {
-        icon: redIcon,
-        zIndexOffset: 1000  // Para asegurarse de que aparezca encima de otros marcadores
-      }).addTo(this.map)
-      .on('click', () => this.showTiendaInfo(tienda));
+  // METODOS DE MARCADORES Y VISUALIZACION
 
-      // Guardar referencia para poder eliminarlo despues
-      this.highlightedMarker = highlightMarker as any;
-      
-      // Mostrar información de la tienda
-      this.showTiendaInfo(tienda);
-    }
-    
-    // Metodo para centrar el mapa en una tienda especifica
-    centerMapOnStore(tienda: ITienda): void {
-      if (!tienda || !this.map) return;
-      
-      const latlng = latLng(tienda.latitud, tienda.longitud);
-      this.map.setView(latlng, 16);
-    }
-    
-    // Método para limpiar resaltados en el mapa
-    clearHighlights(): void {
-      if (this.highlightedMarker) {
-        this.map.removeLayer(this.highlightedMarker);
-        this.highlightedMarker = null;
-      }
-    }
-    
-    togglePanel() {
-      this.panelVisible = !this.panelVisible;
-    }
-
-  private addMarkers(): void {
+  private renderMarkers(): void {
     if (!this.map || !this.mapaInicializado) {
       console.warn('Map not initialized yet, cannot add markers');
       return;
     }
+    
     // Limpiar marcadores existentes
     this.markers.forEach(marker => marker.removeFrom(this.map));
     this.markers = [];
@@ -492,6 +266,226 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     }
   }
 
+  
+  activarModoAnadirTiendas(): void {
+    console.log('Activando modo añadir tiendas');
+    this.modoAnadirTiendas = true;
+
+    //cambiar el cursos del mapa para indicar que esta en modo añadir tiendas
+    this.map.getContainer().style.cursor = 'crosshair';
+    console.log('Cursor cambiado');
+
+    //Añade un listener de click al mapa
+    console.log('Añadiendo listener de click al mapa');
+    this.map.on('click', this.handleMapClickForNewStore.bind(this));
+    console.log('Listener añadido');
+
+    //crear un panel de control en la parte superior
+    this.crearAnadirTiendaPanel()
+
+  }
+
+  desactivarModoAnadirtienda(): void {
+    this.modoAnadirTiendas = false;
+
+    //restaurar el cursos
+    this.map.off('click', this.handleMapClickForNewStore.bind(this));
+
+    //remueve el marcador temporal si existe 
+    if (this.markerTemporal) {
+      this.map.removeLayer(this.markerTemporal);
+      this.markerTemporal = null;
+    }
+
+     // Remueve el panel de control si existe
+    const controlPanel = document.querySelector('.add-store-control-panel');
+    if (controlPanel) {
+    controlPanel.remove();
+    }
+
+    //resetea el estado del formulario
+    this.posicionDeNuevaTienda = null;
+    this.mostrarFormNombre = false;
+    this.nuevaTiendaNombre = '';
+
+  }
+
+
+
+handleMapClickForNewStore(event: LeafletMouseEvent): void{
+  //Guarda la posicion seleccionada
+  this.posicionDeNuevaTienda = event.latlng;
+
+
+  //remueve el marcador temporal previo si existe
+  if (this.markerTemporal) {
+    this.map.removeLayer(this.markerTemporal);
+  }
+
+  //crea un nuevo marcador en la posicion seleccionada
+  this.markerTemporal = L.marker(event.latlng).addTo(this.map);
+
+  //activa el boton de guardar
+  const saveButton = document.querySelector('.save-store-button') as HTMLButtonElement;
+  if(saveButton) {
+    saveButton.disabled = false;
+  }
+}
+
+
+crearAnadirTiendaPanel(): void {
+  console.log('Creando panel de control');
+  console.log('Estado del mapa:', this.map ? 'Inicializado' : 'No inicializado');
+  // Crear el panel de control
+  const controlPanel = document.createElement('div');
+  controlPanel.className = 'add-store-control-panel';
+
+    // Añadir estilos inline para garantizar visibilidad
+    controlPanel.style.position = 'absolute';
+    controlPanel.style.top = '20px';
+    controlPanel.style.left = '50%';
+    controlPanel.style.transform = 'translateX(-50%)';
+    controlPanel.style.backgroundColor = 'white';
+    controlPanel.style.padding = '15px';
+    controlPanel.style.borderRadius = '5px';
+    controlPanel.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
+    controlPanel.style.zIndex = '1500'; // Alto z-index para estar sobre otros elementos
+  
+  // Añadir título
+  const title = document.createElement('h4');
+  title.textContent = 'Añadir nueva tienda';
+  controlPanel.appendChild(title);
+  
+  // Añadir instrucciones
+  const instructions = document.createElement('p');
+  instructions.textContent = 'Haz clic en el mapa para colocar la tienda';
+  controlPanel.appendChild(instructions);
+  
+  // Botones
+  const buttonsDiv = document.createElement('div');
+  buttonsDiv.className = 'control-buttons';
+  
+  // Botón cancelar
+  const cancelButton = document.createElement('button');
+  cancelButton.className = 'btn btn-secondary cancel-store-button';
+  cancelButton.textContent = 'Cancelar';
+  cancelButton.onclick = () => this.desactivarModoAnadirtienda();
+  buttonsDiv.appendChild(cancelButton);
+  
+  // Botón guardar
+  const saveButton = document.createElement('button');
+  saveButton.className = 'btn btn-primary save-store-button';
+  saveButton.textContent = 'Guardar';
+  saveButton.disabled = true; // Inicialmente deshabilitado hasta que se haga clic en el mapa
+  saveButton.onclick = () => this.showStoreNameForm();
+  buttonsDiv.appendChild(saveButton);
+  
+  controlPanel.appendChild(buttonsDiv);
+  
+  // Añadir el panel al DOM
+  document.body.appendChild(controlPanel);
+  console.log('Panel de control creado');
+}
+
+
+showStoreNameForm(): void {
+  this.mostrarFormNombre = true;
+
+  //Ocultar el panel de control
+  const controlPanel = document.querySelector('.add-store-control-panel');
+  if(controlPanel) {
+    controlPanel.remove();
+  }
+
+  //crear el formulario de nombre
+  const contenedorNombreForm = document.createElement('div');
+  contenedorNombreForm.className = 'store-name-form-container';
+
+    // Título
+    const title = document.createElement('h4');
+    title.textContent = 'Nombre de la tienda';
+    contenedorNombreForm.appendChild(title);
+    
+    // Input
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control store-name-input';
+    input.placeholder = 'Introduce el nombre de la tienda...';
+    input.onchange = (e) => this.nuevaTiendaNombre = (e.target as HTMLInputElement).value;
+    contenedorNombreForm.appendChild(input);
+
+      // Botones
+  const buttonsDiv = document.createElement('div');
+  buttonsDiv.className = 'form-buttons';
+  
+  // Botón cancelar
+  const cancelButton = document.createElement('button');
+  cancelButton.className = 'btn btn-secondary cancel-name-button';
+  cancelButton.textContent = 'Cancelar';
+  cancelButton.onclick = () => {
+    contenedorNombreForm.remove();
+    this.activarModoAnadirTiendas(); // Volver al modo de selección en el mapa
+  };
+  buttonsDiv.appendChild(cancelButton);
+  
+  // Botón guardar
+  const saveButton = document.createElement('button');
+  saveButton.className = 'btn btn-primary save-name-button';
+  saveButton.textContent = 'Guardar';
+  saveButton.onclick = () => this.guardarNuevaTienda();
+  buttonsDiv.appendChild(saveButton);
+  
+  contenedorNombreForm.appendChild(buttonsDiv);
+  
+  // Añadir el formulario al DOM
+  document.body.appendChild(contenedorNombreForm);
+}
+
+guardarNuevaTienda(): void {
+  if (!this.posicionDeNuevaTienda || !this.nuevaTiendaNombre.trim()) {
+    alert('Por favor, selecciona una ubicación y proporciona un nombre para la tienda.');
+    return;
+  }
+  
+  // Preparar los datos de la nueva tienda
+  const newStore = {
+    nombre: this.nuevaTiendaNombre.trim(),
+    latitud: this.posicionDeNuevaTienda.lat,
+    longitud: this.posicionDeNuevaTienda.lng
+  };
+  
+  // Enviar a la API
+  this.tiendaService.addTienda(newStore).subscribe({
+    next: (response) => {
+      console.log('Tienda añadida correctamente', response);
+      
+      // Limpiar el formulario
+      const nameFormContainer = document.querySelector('.store-name-form-container');
+      if (nameFormContainer) {
+        nameFormContainer.remove();
+      }
+      
+      // Desactivar el modo de añadir
+      this.desactivarModoAnadirtienda();
+      
+      // Recargar las tiendas
+      this.cargarTiendas();
+      
+      // Mostrar mensaje de éxito
+      alert('¡Tienda añadida con éxito!');
+    },
+    error: (error) => {
+      console.error('Error al añadir la tienda', error);
+      alert('Error al añadir la tienda: ' + error.message);
+    }
+  });
+
+
+
+}
+
+
+
   showTiendaInfo(tienda: ITienda): void {
     console.log('Marcador de tienda clickeado:', tienda);
     this.selectedTienda = tienda;
@@ -503,49 +497,292 @@ private initialCoords: LatLng = latLng(43.4628, -3.8050);
     this.map.getContainer().style.cursor = 'grab';
   }
 
-  handleClose() {
-    this.selectedTienda = null;
+  // METODOS DE LOCALIZACIoN
+
+  locateUser(): void {
+    // Indicador de carga
+    this.isLocating = true;
+
+    const loadingEl = document.createElement('div');
+    loadingEl.className = 'location-loader';
+    loadingEl.innerHTML = '';
+    document.body.appendChild(loadingEl);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          this.userLocation = latLng(latitude, longitude);
+
+          // Actualizar marcador y vista
+          this.updateUserLocationMarker(this.userLocation);
+          this.map.setView(this.userLocation, 15);
+
+          // Actualizar distancias
+          this.actualizarDistanciaTiendas();
+
+          // Limpiar UI
+          this.isLocating = false;
+          document.body.removeChild(loadingEl);
+
+          // Iniciar seguimiento de posicion
+          this.startWatchingPosition();
+        },
+        (error) => {
+          console.error('Error obteniendo localizacion', error);
+          this.handleLocationError(error);
+          this.isLocating = false;
+          document.body.removeChild(loadingEl);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      console.error('Geolocalizacion no supported por el buscador');
+      this.isLocating = false;
+      document.body.removeChild(loadingEl);
+    }
   }
 
-  onMapClick(event: LeafletMouseEvent, tienda: ITienda) {
+  private startWatchingPosition(): void {
+    // Limpiar cualquier vista existente
+    this.stopWatchingPosition();
+
+    // Empezar una nueva vista
+    this.watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        this.userLocation = latLng(latitude, longitude);
+
+        // Actualizar marcador y distancias
+        this.updateUserLocationMarker(this.userLocation);
+        this.actualizarDistanciaTiendas();
+      },
+      (error) => {
+        console.error('Error watching position', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  stopWatchingPosition(): void {
+    if (this.watchId !== null) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+    }
+  }
+
+  private handleLocationError(error: GeolocationPositionError): void {
+    let message = '';
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        message = 'El usuario ha denegado el permiso para la geolocalizacion.';
+        break;
+      case error.POSITION_UNAVAILABLE:
+        message = 'La informacion de ubicacion no esta disponible.';
+        break;
+      case error.TIMEOUT:
+        message = 'La solicitud para obtener la ubicacion del usuario ha caducado';
+        break;
+      default:
+        message = 'Se ha producido un error desconocido.';
+        break;
+    }
+
+    alert(message);
+  }
+
+  private updateUserLocationMarker(location: LatLng): void {
+    // Quitar marcador anterior si existe
+    if (this.userLocationMarker) {
+      this.map.removeLayer(this.userLocationMarker);
+    }
+
+    // Crear un icono personalizado para la localizacion
+    const userIcon = new L.DivIcon({
+      className: 'monster-marker',
+      html: `<img src="assets/monsterconducir.png" style="width:60px; height:60px;">`,
+      iconSize: [60, 60],
+      iconAnchor: [30, 30]
+    });
+
+    // Añadir nuevo marcador
+    this.userLocationMarker = L.marker(location, {
+      icon: userIcon,
+      zIndexOffset: 1000 // Asegura que el marcador de usuario siempre estE encima
+    })
+      .addTo(this.map)
+      .openPopup();
+
+    console.log('Marcador de ubicacion añadido en:', location);
+  }
+
+  // METODOS DE DISTANCIA Y FILTRADO
+
+  actualizarDistanciaTiendas(): void {
+    if (!this.userLocation) return;
+
+    // Calcular distancia del usuario a cada tienda
+    this.tiendas.forEach(tienda => {
+      const storeLocation = latLng(tienda.latitud, tienda.longitud);
+      // @ts-ignore - distance is available in LatLng
+      const distancia = this.userLocation.distanceTo(storeLocation) / 2000;
+      (tienda as any).distance = parseFloat(distancia.toFixed(2));
+    });
+
+    // Ordenar tiendas por distancia
+    this.nearestStores = [...this.tiendas].sort((a, b) =>
+      (a as any).distance - (b as any).distance
+    );
+
+    console.log('Tiendas mas cercanas: ', this.nearestStores);
+  }
+
+  findNearestStoreWithMonster(monsterId: number): ITienda | null {
+    if (!this.userLocation || !this.nearestStores.length) return null;
+    
+    // Encontrar tiendas que tengan el monstruo
+    const storesWithMonster = this.nearestStores.filter(tienda => 
+      tienda.monsters.some((m: any) => m.monster.id === monsterId)
+    );
+    
+    // Ordenar por precio
+    const sortedStores = storesWithMonster.sort((a, b) => {
+      const monsterA = a.monsters.find((m: any) => m.monster.id === monsterId);
+      const monsterB = b.monsters.find((m: any) => m.monster.id === monsterId);
+      
+      // Obtener precio con descuento si es posible, si no el normal
+      const priceA = monsterA?.descuento ? monsterA.precioDescuento ?? monsterA.precio : monsterA?.precio ?? Infinity;
+      const priceB = monsterB?.descuento ? monsterB.precioDescuento ?? monsterB.precio : monsterB?.precio ?? Infinity;
+      
+      return priceA - priceB;
+    });
+    
+    // Devolver la mejor opcion (precio más barato)
+    return sortedStores.length ? sortedStores[0] : null;
+  }
+
+  // METODOS DE FILTRADO Y RESALTADO
+
+  handleFilteredResults(results: any[]): void {
+    if (!results || results.length === 0) return;
+    
+    // Obtener IDs de tiendas únicas
+    const storeIds = [...new Set(results.map(r => r.tiendaId))];
+    
+    // Eliminar cualquier resaltado anterior
+    this.clearHighlights();
+
+    if (!this.mapaInicializado) {
+      this.mapaInitPromesa.then(() => {
+        this.highlightTiendasFiltradas(storeIds, results);
+      });
+      return;
+    }
+    
+    this.highlightTiendasFiltradas(storeIds, results);
+  }
+
+  highlightTiendasFiltradas(storeIds: any[], results: any[]): void {
+    // Resaltar las tiendas en los resultados
+    storeIds.forEach(id => {
+      const tienda = this.tiendas.find(t => t.id === id);
+      if (tienda) {
+        this.highlightStore(tienda);
+      }
+    });
+
+    // Si solo hay un resultado, centramos el mapa en esa tienda
+    if (results.length === 1) {
+      const tienda = this.tiendas.find(t => t.id === results[0].tiendaId);
+      if (tienda) {
+        this.centerMapOnStore(tienda);
+      }
+    }
+  }
+
+  highlightStore(tienda: ITienda): void {
+    if (!tienda || !this.map) return;
+    
+    this.clearHighlights();
+
+    // Icono rojo para highlight tienda seleccionada
+    const redIcon = new L.Icon({
+      iconUrl: 'assets/marker-icon-red.png',
+      iconRetinaUrl: 'assets/marker-icon-2x-red.png',
+      shadowUrl: 'assets/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    const latlng = latLng(tienda.latitud, tienda.longitud);
+    const highlightMarker = L.marker(latlng, {
+      icon: redIcon,
+      zIndexOffset: 1000  // Para asegurarse de que aparezca encima de otros marcadores
+    }).addTo(this.map)
+      .on('click', () => this.showTiendaInfo(tienda));
+
+    // Guardar referencia para poder eliminarlo despues
+    this.highlightedMarker = highlightMarker;
+    
+    // Mostrar informacion de la tienda
+    this.showTiendaInfo(tienda);
+  }
+
+  centerMapOnStore(tienda: ITienda): void {
+    if (!tienda || !this.map) return;
+    
+    const latlng = latLng(tienda.latitud, tienda.longitud);
+    this.map.setView(latlng, 16);
+  }
+
+  clearHighlights(): void {
+    if (this.highlightedMarker) {
+      this.map.removeLayer(this.highlightedMarker);
+      this.highlightedMarker = null;
+    }
+  }
+
+  // METODOS DE UI
+
+  cerrarModalBienvenida(): void {
+    this.mostrarModalBienvenida = false;
+    // Guardar en el localStorage para que no se muestre otra vez
+    localStorage.setItem('modalBienvenidaMostrado', 'true');
+  }
+
+  togglePanel() {
+    this.panelVisible = !this.panelVisible;
+  }
+
+  manejarClickEnMapaParaTiendasNuevas(event: LeafletMouseEvent, tienda: ITienda) {
     console.log('Tienda seleccionada:', tienda);
     this.addStoreForm.patchValue({
       latitud: event.latlng.lat,
       longitud: event.latlng.lng
-    })
+    });
   }
 
-  //metodo estetico
   ajustarAlturaMapa(): void {
     setTimeout(() => {
       const mapContainer = document.querySelector('.map-container') as HTMLElement;
       if (mapContainer) {
-        const alturaVentana = window.innerHeight
-        mapContainer.style.height = `${alturaVentana}px`
+        const alturaVentana = window.innerHeight;
+        mapContainer.style.height = `${alturaVentana}px`;
 
-        if(this.map){
+        if (this.map) {
           this.map.invalidateSize();
         }
-
       }
-    },100)  // Un pequeño retraso para asegurar que el DOM está listo
-
+    }, 100);  // Un pequeño retraso para asegurar que el DOM esta listo
   }
-
-  ngOnDestroy(): void {
-    if (this.watchId !== null) {
-      navigator.geolocation.clearWatch(this.watchId);
-    }
-
-    window.removeEventListener('resize', this.ajustarAlturaMapa.bind(this));
-
-    // Desuscribir de los observables
-  if (this.filteredResultsSubscription) {
-    this.filteredResultsSubscription.unsubscribe();
-  }
-
-  }
-
-
 }
-
