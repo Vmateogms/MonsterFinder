@@ -40,34 +40,56 @@ export class AddtiendaComponent {
         nombre: this.addStoreForm.get('nombre').value,
         latitud: this.addStoreForm.get('latitud').value,
         longitud: this.addStoreForm.get('longitud').value,
-        //imagenUrl: this.addStoreForm.get('imagenUrl').value || null 
       };
-  
-      console.log('Sending precise payload:', payload);
-  
+    
+      console.log('Sending payload:', payload);
+    
       this.tService.addTienda(payload).subscribe({
         next: (response) => {
           console.log('Store added successfully', response);
-          // cerrar la logica del modal
-          const modalElement = document.getElementById('addStoreModal');
-          const modalBackdrop = document.querySelector('.modal-backdrop');
           
+          // Close the modal completely
+          const modalElement = document.getElementById('addStoreModal');
           if (modalElement) {
-            const modal = Modal.getInstance(modalElement);
-            modal?.hide();
+            try {
+              const modal = Modal.getInstance(modalElement);
+              if (modal) {
+                modal.hide();
+              }
+            } catch (error) {
+              console.error('Error closing modal:', error);
+            }
           }
+          
+          // Thorough cleanup
+          document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+          
+          // Reset form
+          this.addStoreForm.reset();
+          
+          // Notify update to refresh markers
           this.notificarActualizacion();
         },
         error: (err) => {
           console.error('Detailed error:', err);
-          
-          alert('Error adding store: ' + err.message);
+          alert('Error adding store: ' + (err.message || 'Unknown error'));
         }
       });
+    } else {
+      // Mark all fields as touched to show validation errors
+      Object.keys(this.addStoreForm.controls).forEach(key => {
+        const control = this.addStoreForm.get(key);
+        control.markAsTouched();
+      });
+      alert('Por favor, complete todos los campos correctamente.');
     }
   }
 
   startAddStoreMapMode() {
+    console.log('Iniciando modo de selección en el mapa');
     // Cerrar el modal completamente
     const modalElement = document.getElementById('addStoreModal');
     if (modalElement) {
@@ -84,13 +106,15 @@ export class AddtiendaComponent {
     // Limpieza rigurosa del modal
     document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
     document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
     document.body.style.paddingRight = '';
+    document.body.style.overflow = '';
     
     // Emitir evento
-    console.log('Emitiendo evento activateMapMode');
-    this.activateMapMode.emit();
+    setTimeout(() => {
+      console.log('Emitiendo evento activateMapMode');
+      this.activateMapMode.emit();
+    }, 100);
   }
 }
- 
+
 

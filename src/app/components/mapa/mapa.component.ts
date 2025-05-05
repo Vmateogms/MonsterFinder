@@ -47,6 +47,7 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
   posicionDeNuevaTienda: LatLng | null = null;
   mostrarFormNombre: boolean = false;
   nuevaTiendaNombre: string = '';
+  private guardandoTienda: boolean = false;
 
   // Propiedades de UI
   panelVisible: boolean = false;
@@ -269,30 +270,55 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
   
   activarModoAnadirTiendas(): void {
     console.log('Activando modo añadir tiendas');
+
+    
+    
+    //cambiar el cursos del mapa para indicar que esta en modo añadir tiendas
+    if (this.map && this.map.getContainer()) {
+      this.map.getContainer().style.cursor = 'crosshair';
+      console.log('Cursor cambiado');
+    }
+    
     this.modoAnadirTiendas = true;
 
-    //cambiar el cursos del mapa para indicar que esta en modo añadir tiendas
-    this.map.getContainer().style.cursor = 'crosshair';
-    console.log('Cursor cambiado');
-
     //Añade un listener de click al mapa
-    console.log('Añadiendo listener de click al mapa');
-    this.map.on('click', this.handleMapClickForNewStore.bind(this));
-    console.log('Listener añadido');
-
+    if (this.map) {
+      this.map.off('click');
+      
+      this.boundHandleMapClick = this.handleMapClickForNewStore.bind(this);
+      this.map.on('click', this.boundHandleMapClick);
+      console.log('Listener añadido');
+    }
+    
     //crear un panel de control en la parte superior
     this.crearAnadirTiendaPanel()
-
+    
+    //this.desactivarModoAnadirtienda();
   }
 
   desactivarModoAnadirtienda(): void {
+    console.log('Desactivando modo añadir tienda');
+
     this.modoAnadirTiendas = false;
 
-    //restaurar el cursos
-    this.map.off('click', this.handleMapClickForNewStore.bind(this));
+   // Restaurar el cursor
+    if (this.map && this.map.getContainer()) {
+      this.map.getContainer().style.cursor = '';
+    }
+
+   // Remover el listener de click del mapa
+   if (this.map) {
+    // Importante: eliminar TODOS los handlers de click
+    this.map.off('click');
+    
+    if (this.boundHandleMapClick) {
+      this.map.off('click', this.boundHandleMapClick);
+      this.boundHandleMapClick = null;
+    }
+  }
 
     //remueve el marcador temporal si existe 
-    if (this.markerTemporal) {
+    if (this.markerTemporal && this.map) {
       this.map.removeLayer(this.markerTemporal);
       this.markerTemporal = null;
     }
@@ -303,27 +329,54 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
     controlPanel.remove();
     }
 
+     // Remove name form if it exists
+  const nameForm = document.querySelector('.store-name-form-container');
+  if (nameForm) {
+    nameForm.remove();
+  }
+
     //resetea el estado del formulario
     this.posicionDeNuevaTienda = null;
     this.mostrarFormNombre = false;
     this.nuevaTiendaNombre = '';
-
+    this.guardandoTienda = false;
+    
+    console.log('Modo añadir tienda completamente desactivado');
   }
 
+  private boundHandleMapClick: ((event: L.LeafletMouseEvent) => void ) | null = null;;
 
 
 handleMapClickForNewStore(event: LeafletMouseEvent): void{
+
+  if (!this.modoAnadirTiendas) {
+    console.log('Click ignorado - no estamos en modo añadir tienda');
+    return;
+  }
+
+  console.log('Click en el mapa para nueva tienda', event.latlng);
+
   //Guarda la posicion seleccionada
   this.posicionDeNuevaTienda = event.latlng;
 
 
   //remueve el marcador temporal previo si existe
-  if (this.markerTemporal) {
+  if (this.markerTemporal && this.map) {
     this.map.removeLayer(this.markerTemporal);
   }
 
+  const newStoreIcon = new L.Icon({
+    iconUrl: 'assets/marker-icon-red.png',
+    iconRetinaUrl: 'assets/marker-icon-2x-red.png',
+    shadowUrl: 'assets/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
   //crea un nuevo marcador en la posicion seleccionada
-  this.markerTemporal = L.marker(event.latlng).addTo(this.map);
+  this.markerTemporal = L.marker(event.latlng, { icon: newStoreIcon }).addTo(this.map);
 
   //activa el boton de guardar
   const saveButton = document.querySelector('.save-store-button') as HTMLButtonElement;
@@ -391,15 +444,35 @@ crearAnadirTiendaPanel(): void {
 showStoreNameForm(): void {
   this.mostrarFormNombre = true;
 
+
+   // Remove any existing forms to prevent duplicates
+   const existingForm = document.querySelector('.store-name-form-container');
+   if (existingForm) {
+     existingForm.remove();
+   }
+
   //Ocultar el panel de control
   const controlPanel = document.querySelector('.add-store-control-panel');
   if(controlPanel) {
     controlPanel.remove();
   }
 
-  //crear el formulario de nombre
   const contenedorNombreForm = document.createElement('div');
   contenedorNombreForm.className = 'store-name-form-container';
+  contenedorNombreForm.style.position = 'absolute';
+  contenedorNombreForm.style.top = '20px';
+  contenedorNombreForm.style.left = '50%';
+  contenedorNombreForm.style.transform = 'translateX(-50%)';
+  contenedorNombreForm.style.backgroundColor = 'white';
+  contenedorNombreForm.style.padding = '15px';
+  contenedorNombreForm.style.borderRadius = '5px';
+  contenedorNombreForm.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
+  contenedorNombreForm.style.zIndex = '1500';
+  contenedorNombreForm.style.width = '300px';
+
+
+
+  
 
     // Título
     const title = document.createElement('h4');
@@ -411,20 +484,34 @@ showStoreNameForm(): void {
     input.type = 'text';
     input.className = 'form-control store-name-input';
     input.placeholder = 'Introduce el nombre de la tienda...';
-    input.onchange = (e) => this.nuevaTiendaNombre = (e.target as HTMLInputElement).value;
+    input.value = this.nuevaTiendaNombre;
+    input.oninput = (e) => {
+      this.nuevaTiendaNombre = (e.target as HTMLInputElement).value;
+    };
     contenedorNombreForm.appendChild(input);
 
+    //añadimos espacio
+    const spacer = document.createElement('div');
+  spacer.style.height = '10px';
+  contenedorNombreForm.appendChild(spacer);
+
       // Botones
-  const buttonsDiv = document.createElement('div');
-  buttonsDiv.className = 'form-buttons';
+      const buttonsDiv = document.createElement('div');
+      buttonsDiv.className = 'form-buttons';
+      buttonsDiv.style.display = 'flex';
+      buttonsDiv.style.justifyContent = 'space-between';
+      buttonsDiv.style.marginTop = '10px';
   
   // Botón cancelar
   const cancelButton = document.createElement('button');
   cancelButton.className = 'btn btn-secondary cancel-name-button';
   cancelButton.textContent = 'Cancelar';
-  cancelButton.onclick = () => {
+  cancelButton.style.marginRight = '10px';
+  cancelButton.onclick = (e) => {
+    e.preventDefault(); 
+    console.log('Cancelando formulario de nombre');
     contenedorNombreForm.remove();
-    this.activarModoAnadirTiendas(); // Volver al modo de selección en el mapa
+    this.activarModoAnadirTiendas(); // Return to map selection mode
   };
   buttonsDiv.appendChild(cancelButton);
   
@@ -432,21 +519,54 @@ showStoreNameForm(): void {
   const saveButton = document.createElement('button');
   saveButton.className = 'btn btn-primary save-name-button';
   saveButton.textContent = 'Guardar';
-  saveButton.onclick = () => this.guardarNuevaTienda();
+  saveButton.onclick = (e) => {
+    e.preventDefault(); 
+
+    //Confirmacion Antes de guardar
+    if (confirm(`¿Estas seguro de que quieres añadir la tienda "${this.nuevaTiendaNombre}" en "${this.posicionDeNuevaTienda?.lat.toFixed(6)}, ${this.posicionDeNuevaTienda?.lng.toFixed(6)}?"` )) {
+      console.log('Botón guardar clickeado, llamando a guardarNuevaTienda()');
+      this.guardarNuevaTienda();
+    } else {
+      console.log('Confimacion cancelada')
+    }
+  };
   buttonsDiv.appendChild(saveButton);
   
   contenedorNombreForm.appendChild(buttonsDiv);
   
+   // Debug info to confirm position data
+  const debugInfo = document.createElement('div');
+  debugInfo.style.fontSize = '10px';
+  debugInfo.style.marginTop = '10px';
+  debugInfo.style.color = '#888';
+  debugInfo.textContent = `Posición: ${this.posicionDeNuevaTienda?.lat.toFixed(6)}, ${this.posicionDeNuevaTienda?.lng.toFixed(6)}`;
+  contenedorNombreForm.appendChild(debugInfo);
+  
   // Añadir el formulario al DOM
   document.body.appendChild(contenedorNombreForm);
+  setTimeout(() => {
+    input.focus();
+  }, 100);
 }
 
 guardarNuevaTienda(): void {
+  console.log('Ejecutando guardarNuevaTienda');
+  console.log('Nombre:', this.nuevaTiendaNombre);
+  console.log('Posición:', this.posicionDeNuevaTienda);
+
   if (!this.posicionDeNuevaTienda || !this.nuevaTiendaNombre.trim()) {
     alert('Por favor, selecciona una ubicación y proporciona un nombre para la tienda.');
     return;
   }
-  
+
+  this.guardandoTienda = true;
+
+  const saveButton = document.querySelector('.save-name-button') as HTMLButtonElement;
+  if (saveButton) {
+    saveButton.disabled = true;
+    saveButton.textContent = 'Guardando...';
+  }
+
   // Preparar los datos de la nueva tienda
   const newStore = {
     nombre: this.nuevaTiendaNombre.trim(),
@@ -454,38 +574,63 @@ guardarNuevaTienda(): void {
     longitud: this.posicionDeNuevaTienda.lng
   };
   
+  
   // Enviar a la API
   this.tiendaService.addTienda(newStore).subscribe({
     next: (response) => {
       console.log('Tienda añadida correctamente', response);
       
-      // Limpiar el formulario
-      const nameFormContainer = document.querySelector('.store-name-form-container');
-      if (nameFormContainer) {
-        nameFormContainer.remove();
-      }
-      
-      // Desactivar el modo de añadir
+      // Completely deactivate store addition mode
       this.desactivarModoAnadirtienda();
       
-      // Recargar las tiendas
-      this.cargarTiendas();
+      // Extra safety measures to ensure all state is reset
+      this.modoAnadirTiendas = false;
+      if (this.markerTemporal && this.map) {
+        this.map.removeLayer(this.markerTemporal);
+        this.markerTemporal = null;
+      }
+      //resetear todas las variables de estado
+      this.posicionDeNuevaTienda = null;
+      this.nuevaTiendaNombre = '';
+      this.guardandoTienda = false;
       
-      // Mostrar mensaje de éxito
-      alert('¡Tienda añadida con éxito!');
+      // quitar todos los listeners del mapa
+      if (this.map) {
+        this.map.off('click');
+      }
+      //reset el cursor
+      if (this.map && this.map.getContainer()) {
+        this.map.getContainer().style.cursor = '';
+      }
+      
+      // Reload stores after a delay for the backend to process
+      setTimeout(() => {
+        this.cargarTiendas();
+        alert('Tienda añadida con éxito');
+      }, 1000);
     },
-    error: (error) => {
-      console.error('Error al añadir la tienda', error);
-      alert('Error al añadir la tienda: ' + error.message);
+    error: (err) => {
+      console.error('Error al añadir la tienda', err);
+      if (saveButton) {
+        saveButton.disabled = false;
+        saveButton.textContent = 'Guardar';
+      }
+      this.guardandoTienda = false;
+      
+      let errorMsg = 'Error al añadir la tienda';
+      if (err.error && err.error.message) {
+        errorMsg += ': ' + err.error.message;
+      } else if (err.message) {
+        errorMsg += ': ' + err.message;
+      } else if (err.status) {
+        errorMsg += `: Error HTTP ${err.status}`;
+      }
+      
+      alert(errorMsg);
+
     }
   });
-
-
-
 }
-
-
-
   showTiendaInfo(tienda: ITienda): void {
     console.log('Marcador de tienda clickeado:', tienda);
     this.selectedTienda = tienda;

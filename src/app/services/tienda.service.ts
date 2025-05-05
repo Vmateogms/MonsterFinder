@@ -1,6 +1,6 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { map, Observable, of, tap } from 'rxjs';
+import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
 import { ITienda } from '../interfaces/itienda';
 import { environment } from './environment.prod';
 
@@ -16,7 +16,7 @@ private apiUrl = `${environment.apiUrl}/tiendas`;
 private tiendaCache: ITienda[] = [];
 private lastFetchTime: number = 0;
 private readonly CACHE_DURATION = 5 * 60 * 1000 //5 minutos 
- 
+
   constructor(private http: HttpClient) { }
 
 
@@ -76,15 +76,70 @@ getTiendaById(id: number): Observable<ITienda> {
 
 
 
-addTienda(tienda: any) {
-  const httpOptions = {
-    headers: new HttpHeaders({
-      'Content-Type': 'application/json'
-    })
+addTienda(tienda: any): Observable<any> {
+
+  console.log('TiendaService.addTienda called with:', tienda);
+
+  if (!tienda.nombre || !tienda.latitud || !tienda.longitud) {
+    console.error('Datos de tienda incompletos', tienda);
+    return throwError(() => new Error('Datos de tienda incompletos'));
+  }
+
+  const payload = {
+    nombre: tienda.nombre,
+    latitud: Number(tienda.latitud),
+    longitud: Number(tienda.longitud)
   };
-  return this.http.post(this.apiUrl, tienda, httpOptions);
+
+  console.log('Sending formatted payload to API:', payload);
+
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json'
+  });
+
+  return this.http.post<any>(this.apiUrl, payload, { headers })
+    .pipe(
+      tap(response => {
+        console.log('API response for addTienda:', response);
+        this.tiendaCache = [];
+        this.lastFetchTime = 0;
+      }),
+      catchError(error => {
+        console.error('API error in addTienda:', error);
+        let errorMessage = 'Error al añadir tienda';
+        
+        if (error.error instanceof ErrorEvent) {
+          errorMessage = `Error del cliente: ${error.error.message}`;
+        } else if (error.error && error.error.message) {
+          errorMessage = `Error del servidor: ${error.error.message}`;
+        } else if (error.status) {
+          errorMessage = `Error HTTP ${error.status}: ${error.statusText || 'Error desconocido'}`;
+        }
+        
+        console.error(errorMessage);
+        return throwError(() => new Error(errorMessage));
+      })
+    );
+
+  
 }
 
+private handleError(error: HttpErrorResponse) {
+  console.error('Error detallado:', error);
+  
+  let errorMessage = 'Ocurrió un error desconocido';
+  
+  if (error.error instanceof ErrorEvent) {
+    // Error del lado del cliente
+    errorMessage = `Error del cliente: ${error.error.message}`;
+  } else {
+    // Error del backend
+    errorMessage = `Error del servidor: ${error.status}. Mensaje: ${error.error?.message || error.statusText}`;
+  }
+  
+  console.error(errorMessage);
+  return throwError(() => new Error(errorMessage));
+}
 
 
 }
