@@ -36,7 +36,9 @@ podras mostrar o ocultar las tiendas mas cercanas a ti y la distancia hasta esta
 El mapa (https://leafletjs.com/) tiene un botón arriba a la derecha "Añadir tienda" por el
 que, el usuario será capaz de añadir tiendas al mapa, un pequeño formulario preguntando
 por; Nombre del negocio, Latitud, Longitud, Url de imagen. Una vez presionado el botón de
-guardar solo será necesario Refrescar la pagina y la tienda aparecerá en el mapa.
+guardar solo será necesario Refrescar la pagina y la tienda aparecerá en el mapa. ❗Nueva
+actualizacion❗Ahora se pueden **añadir tiendas simplemente haciendo click** donde quieres poner la 
+tienda en el mapa. Añadir tienda -> Añadir tienda en el mapa 
 
 ### Configurar productos y precio
 Al hacer click en cualquier pin del mapa aparecerá la tienda seleccionada, aquí se
