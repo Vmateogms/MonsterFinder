@@ -73,7 +73,7 @@ usuario y automáticamente borrar toda participación de esta en la pagina.
 **Abril-Mayo**  
 - Añadir Geolocalización  ✅
 - Filtros por rango de productos ✅ 
-- Más Productos  
+- Más Productos ✅
 - Productos del tiempo o fríos ✅
 - Usuarios ⌛
    
