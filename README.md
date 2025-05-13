@@ -24,32 +24,55 @@ datos en MySQL.
 
 ## Modo de uso
 
-#### Activar ubicación
-Arriba a la izquierda del mapa podras ver un checkbox con un pin donde, si clickeas una sola vez,
-te llevara automaticamente a tu ubicacion "exacta", donde podras **consultar las tiendas mas cercanas**.
+### Iniciar sesión y registrarse
+En la esquina superior izquierda hay un botón con el icono de un engranaje (⚙️) que permite registrarse o iniciar sesión.
+Una vez iniciada sesión, el usuario podrá ver su nivel y experiencia acumulada, así como acceder a su perfil completo.
+
+
+### Perfil de usuario
+Después de iniciar sesión, aparecerá un botón con tu nivel y nombre de usuario. Al hacer clic, verás tu perfil completo con:
+- Nivel y barra de progreso
+- Experiencia acumulada y necesaria para el siguiente nivel
+- Estadísticas de usuario
+- Lista de tiendas favoritas
+
+### Activar ubicación
+Arriba a la izquierda del mapa podrás ver un botón con un pin (📍) donde, si clickeas una sola vez, 
+te llevará automáticamente a tu ubicación "exacta", donde podrás consultar las tiendas más cercanas.
 
 #### Tiendas cercanas
 Una vez se ha activado la ubicacion en tiempo real, podras ver un boton azul abajo a la derecha, con el que
 podras mostrar o ocultar las tiendas mas cercanas a ti y la distancia hasta estas.
 
-#### Añadir tiendas
-El mapa (https://leafletjs.com/) tiene un botón arriba a la derecha "Añadir tienda" por el
-que, el usuario será capaz de añadir tiendas al mapa, un pequeño formulario preguntando
-por; Nombre del negocio, Latitud, Longitud, Url de imagen. Una vez presionado el botón de
-guardar solo será necesario Refrescar la pagina y la tienda aparecerá en el mapa. ❗Nueva
-actualización❗Ahora se pueden **añadir tiendas simplemente haciendo click** donde quieres poner la 
-tienda en el mapa. Añadir tienda -> Añadir tienda en el mapa 
+### Filtrar productos
+En la parte superior del mapa encontrarás un botón "Filtrar Monsters" que te permite buscar productos específicos y ordenarlos por precio. Además, puedes filtrar solo por productos disponibles en nevera.
+
+### Añadir tiendas
+El mapa tiene un botón arriba a la derecha "Añadir tienda" para agregar nuevas tiendas. Al hacer clic, activarás el modo para añadir tiendas directamente en el mapa. Simplemente:
+1. Haz clic en el punto del mapa donde quieres añadir la tienda
+2. Introduce el nombre de la tienda
+3. Confirma la creación
+
+Al añadir tiendas, ganarás 1000 puntos de experiencia, lo que te ayudará a subir de nivel.
 
 ### Configurar productos y precio
-Al hacer click en cualquier pin del mapa aparecerá la tienda seleccionada, aquí se
-mostraran una vista simple de los productos que tiene la tienda y debajo tres opciones;
-**Editar | Ver | Cancelar.** El propósito de estas es **Editar:** El usuario se encontrara con fotos
-de los productos y al lado un checkbox, para confirmar que un producto esta en la tienda
-solamente haga click en el checkbox y aparecerá inmediatamente un input donde
-introducir el precio, presione guardar y la tienda será actualizada en base a la información
-que usted a propuesto. **Ver:** Como bien indica el nombre la función de este botón será
-permitir ver al usuario los productos distribuidos en columnas con cards, donde se vera el
-nombre, sabor, descripción y precio.
+Al hacer click en cualquier pin del mapa aparecerá la tienda seleccionada, aquí se mostrarán una vista simple de los productos que tiene la tienda y debajo tres opciones:
+
+- **Editar**: Te permitirá activar o desactivar productos, establecer precios, marcar descuentos y especificar si están disponibles en nevera.
+- **Ver Detalles**: Muestra los productos en formato de tarjetas con toda la información.
+- **Marcar favoritos**: Las tiendas pueden marcarse como favoritas para acceder rápidamente desde tu perfil.
+
+
+## Sistema de niveles y experiencia
+MonsterFinder incluye un sistema de progresión que recompensa la participación:
+
+- Crear una nueva tienda: +1000 XP
+- Añadir un producto a una tienda: +300 XP
+- Actualizar precio de un producto: +200 XP
+- Verificar una contribución: +100 XP
+- Reportar un error: +50 XP
+
+A medida que acumules experiencia, subirás de nivel y verás tu progreso en el perfil.
 
 ## Problemas conocidos
 Durante el desarrollo de esta pagina se ha encontrado una serie de problemas, que se
@@ -70,28 +93,27 @@ usuario y automáticamente borrar toda participación de esta en la pagina.
 
 ---
 
-**Abril-Mayo**  
-- Añadir Geolocalización  ✅
-- Filtros por rango de productos ✅ 
-- Más Productos ✅
-- Productos del tiempo o fríos ✅
-- Usuarios ⌛
-   
+### Abril-Mayo
+- ✅ Añadir Geolocalización
+- ✅ Filtros por rango de productos
+- ✅ Más Productos
+- ✅ Productos en nevera
+- ✅ Usuarios y sistema de autenticación
+- ✅ Sistema de experiencia y niveles
+- ✅ Sistema de tiendas favoritas
+- ✅ Notificaciones visuales de experiencia ganada
 
----
-
-**Mayo-Junio**  
+### Mayo-Junio (Planificadas)
 - Web Scraping para obtener productos live
-- Mejorar estética  
-- Fotos de los productos mejores  
-- Optimización  
-- Seguridad  
- 
+- Mejorar estética
+- Fotos de los productos mejores
+- Optimización
+- Seguridad
 
----
-
-**Junio-???**  
-- ElasticSearch en el backend  
+### Junio-??? (Futuras)
+- ElasticSearch en el backend
+- Overhaul de la página
+- Adición de otro tipo de productos
 - Overhaul de la página  
 - Adición de otro tipo de productos  
 =======
