@@ -12,11 +12,16 @@ import { CommunicationService } from '../../services/communication.service';
 import { MonsterService } from '../../services/monster.service';
 import { ModalBienvenidaComponent } from "../modal-bienvenida/modal-bienvenida.component";
 import { MonsterFilterComponent } from "../monster-filter/monster-filter.component";
+import { UserProfileComponent } from "../perfil-usuario/user-profile/user-profile.component";
+import { AuthComponent } from "../auth/auth/auth.component";
+import { AuthService } from '../../services/auth.service';
+import { HttpHeaders } from '@angular/common/http';
+import { environment } from '../../environment/environment.prod';
 
 @Component({
   selector: 'app-mapa',
   standalone: true,
-  imports: [TiendaDetailComponent, LeafletModule, CommonModule, AddtiendaComponent, ModalBienvenidaComponent, MonsterFilterComponent],
+  imports: [TiendaDetailComponent, LeafletModule, CommonModule, AddtiendaComponent, ModalBienvenidaComponent, MonsterFilterComponent, UserProfileComponent, AuthComponent],
   templateUrl: './mapa.component.html',
   styleUrl: './mapa.component.css'
 })
@@ -63,7 +68,8 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
     private tiendaService: TiendaService,
     private fb: FormBuilder,
     private cservice: CommunicationService,
-    private mService: MonsterService
+    private mService: MonsterService,
+    private authService: AuthService
   ) {
     this.mapaInitPromesa = new Promise<void>((resolve) => {
       this.mapaInitResolver = resolve;
@@ -603,11 +609,35 @@ guardarNuevaTienda(): void {
         this.map.getContainer().style.cursor = '';
       }
       
-      // Reload stores after a delay for the backend to process
-      setTimeout(() => {
+      // Actualizar el perfil del usuario si está autenticado para obtener la experiencia ganada
+      if (this.authService.isLoggedIn) {
+        // Primero, solicitar explícitamente la recompensa de experiencia
+        this.solicitarRecompensaExperiencia(response.id).then(() => {
+          // Luego actualizar el perfil
+          this.authService.obtenerPerfil().subscribe({
+            next: (usuario) => {
+              console.log('Perfil actualizado después de añadir tienda:', usuario);
+              // Mostrar notificación de experiencia ganada
+              this.mostrarNotificacionExperiencia();
+            },
+            error: (err) => {
+              console.error('Error al actualizar perfil:', err);
+            }
+          });
+        }).catch(error => {
+          console.error('Error al solicitar recompensa:', error);
+        });
+      }
+      
+      // Crear un efecto visual de marca nueva en el mapa
+      if (response && response.id) {
+        setTimeout(() => {
+          this.cargarTiendas();
+          this.resaltarTiendaNueva(response);
+        }, 1000);
+      } else {
         this.cargarTiendas();
-        alert('Tienda añadida con éxito');
-      }, 1000);
+      }
     },
     error: (err) => {
       console.error('Error al añadir la tienda', err);
@@ -627,14 +657,205 @@ guardarNuevaTienda(): void {
       }
       
       alert(errorMsg);
-
     }
   });
 }
+
+// Método para solicitar explícitamente la recompensa por añadir una tienda
+private solicitarRecompensaExperiencia(tiendaId: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const url = `${environment.apiUrl}/usuarios/recompensa`;
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('token')}`
+    });
+    
+    const payload = {
+      accion: 'AÑADIR_TIENDA',
+      tiendaId: tiendaId,
+      experiencia: 1000
+    };
+    
+    console.log('🏆 Solicitando recompensa de experiencia:', payload);
+    
+    this.authService['http'].post(url, payload, { headers }).subscribe({
+      next: (response: any) => {
+        console.log('✅ Recompensa procesada:', response);
+        resolve();
+      },
+      error: (error: any) => {
+        console.error('❌ Error al procesar recompensa:', error);
+        // Resolvemos de todas formas para continuar el flujo
+        resolve();
+      }
+    });
+  });
+}
+
+  // Método para resaltar una tienda recién añadida con animación
+  private resaltarTiendaNueva(tiendaNueva: any): void {
+    console.log('Resaltando nueva tienda:', tiendaNueva);
+    
+    // Buscar la tienda en la lista actualizada
+    const tienda = this.tiendas.find(t => t.id === tiendaNueva.id);
+    if (!tienda) {
+      console.log('No se encontró la tienda nueva en la lista actualizada');
+      return;
+    }
+    
+    // Centrar el mapa en la nueva tienda
+    this.centerMapOnStore(tienda);
+    
+    // Crear un marcador de destello para la tienda nueva
+    const latlng = latLng(tienda.latitud, tienda.longitud);
+    
+    // Crear un círculo pulsante para resaltar la nueva tienda
+    const highlightCircle = L.circle(latlng, {
+      radius: 30,
+      color: '#4CAF50',
+      fillColor: '#4CAF50',
+      fillOpacity: 0.7,
+      weight: 2
+    }).addTo(this.map);
+    
+    // Animación de pulso
+    let size = 30;
+    const maxSize = 80;
+    const interval = setInterval(() => {
+      size += 5;
+      highlightCircle.setRadius(size);
+      highlightCircle.setStyle({
+        fillOpacity: Math.max(0, 0.7 - (size / maxSize) * 0.7)
+      });
+      
+      if (size >= maxSize) {
+        clearInterval(interval);
+        
+        // Remover el círculo después de completar la animación
+        setTimeout(() => {
+          this.map.removeLayer(highlightCircle);
+          
+          // Mostrar el modal de la tienda después de la animación
+          this.showTiendaInfo(tienda);
+          
+          // Mostrar mensaje de éxito
+          alert('¡Tienda añadida con éxito! Ahora puedes añadir tus bebidas favoritas.');
+        }, 500);
+      }
+    }, 50);
+  }
+  
+  // Método para mostrar una notificación de experiencia ganada
+  private mostrarNotificacionExperiencia(): void {
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    notification.className = 'xp-notification';
+    notification.innerHTML = `
+      <div class="xp-notification-content">
+        <img src="assets/monsterconducir.png" alt="Monster" class="xp-icon">
+        <div class="xp-text">
+          <span class="xp-title">¡Experiencia ganada!</span>
+          <span class="xp-value">+1000 XP</span>
+        </div>
+      </div>
+    `;
+    
+    // Añadir estilos inline para la notificación
+    notification.style.position = 'fixed';
+    notification.style.bottom = '20px';
+    notification.style.right = '20px';
+    notification.style.backgroundColor = '#4CAF50';
+    notification.style.color = 'white';
+    notification.style.padding = '10px 15px';
+    notification.style.borderRadius = '10px';
+    notification.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
+    notification.style.zIndex = '2000';
+    notification.style.display = 'flex';
+    notification.style.alignItems = 'center';
+    notification.style.animation = 'slideIn 0.5s forwards, fadeOut 0.5s 3.5s forwards';
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(50px)';
+    
+    // Crear estilos para la animación
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(50px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(50px); }
+      }
+      .xp-notification-content {
+        display: flex;
+        align-items: center;
+      }
+      .xp-icon {
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+      }
+      .xp-text {
+        display: flex;
+        flex-direction: column;
+      }
+      .xp-title {
+        font-weight: bold;
+        margin-bottom: 2px;
+      }
+      .xp-value {
+        font-size: 14px;
+      }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(notification);
+    
+    // Eliminar la notificación después de 4 segundos
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 4000);
+  }
+
   showTiendaInfo(tienda: ITienda): void {
     console.log('Marcador de tienda clickeado:', tienda);
-    this.selectedTienda = tienda;
+    
+    // Si no tiene monsters o está vacío, recargar los datos
+    if (!tienda.monsters || tienda.monsters.length === 0) {
+      console.log('Tienda sin monsters detectada. Recargando datos...');
+      this.tiendaService.getTiendaById(tienda.id).subscribe({
+        next: (tiendaActualizada) => {
+          console.log('Datos de tienda actualizados:', tiendaActualizada);
+          this.selectedTienda = tiendaActualizada;
+          this.verificarFavorito(tiendaActualizada);
+        },
+        error: (error) => {
+          console.error('Error al recargar datos de tienda:', error);
+          // Continuar con los datos que tenemos
+          this.selectedTienda = tienda;
+          this.verificarFavorito(tienda);
+        }
+      });
+    } else {
+      // Si ya tiene datos completos
+      this.selectedTienda = tienda;
+      this.verificarFavorito(tienda);
+    }
+    
     this.map.getContainer().style.cursor = 'pointer';
+  }
+  
+  // Método auxiliar para verificar si una tienda es favorita
+  private verificarFavorito(tienda: ITienda): void {
+    //si el usuario esta logueado, verificamos si la tienda es favorita
+    if(this.authService.isLoggedIn) {
+      this.authService.esFavorito(tienda.id).subscribe(esFavorito => {
+        if(this.selectedTienda){
+          (this.selectedTienda as any).esFavorita = esFavorito;
+        }
+      });
+    }
   }
 
   closeInfo(): void {
@@ -858,6 +1079,30 @@ guardarNuevaTienda(): void {
     
     this.clearHighlights();
 
+    // Si no hay monsters en la tienda, intentamos recargar los datos
+    if (!tienda.monsters || tienda.monsters.length === 0) {
+      console.log('La tienda no tiene monsters. Intentando recargar datos...');
+      this.tiendaService.getTiendaById(tienda.id).subscribe({
+        next: (tiendaActualizada) => {
+          console.log('Datos de tienda recargados:', tiendaActualizada);
+          // Actualizar la referencia a tienda con los datos completos
+          this.selectedTienda = tiendaActualizada;
+          this.continuarHighlightStore(tiendaActualizada);
+        },
+        error: (error) => {
+          console.error('Error al recargar datos de tienda:', error);
+          // Continuar con los datos que tenemos
+          this.continuarHighlightStore(tienda);
+        }
+      });
+    } else {
+      // Si ya tiene monsters, continuar normalmente
+      this.continuarHighlightStore(tienda);
+    }
+  }
+
+  // Método auxiliar para evitar duplicación de código
+  private continuarHighlightStore(tienda: ITienda): void {
     // Icono rojo para highlight tienda seleccionada
     const redIcon = new L.Icon({
       iconUrl: 'assets/marker-icon-red.png',

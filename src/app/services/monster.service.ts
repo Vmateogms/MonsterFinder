@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { IMonster } from '../interfaces/imonster';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { environment } from './environment.prod';
+import { environment } from '../environment/environment.prod';
 import { catchError, Observable, of, Subject, tap ,map } from 'rxjs';
 import { MapaComponent } from '../components/mapa/mapa.component';
 

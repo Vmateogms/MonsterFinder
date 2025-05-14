@@ -1,49 +1,73 @@
-<div class="modal-overlay">
-  <div class="modal-content">
-    <h2>{{ tienda.nombre }}</h2>
+<div class="modal-overlay" (mousedown)="$event.stopPropagation()" (mousemove)="$event.stopPropagation()" style="z-index: 2000;">
+  <div class="modal-content" (mousedown)="$event.stopPropagation()" (mousemove)="$event.stopPropagation()">
+    <div class="store-header">
+      <h2>{{ tienda.nombre }}</h2>
+      
+      <!-- Botón de favoritos (estrella) -->
+      @if (authService.isLoggedIn) {
+        <button class="btn-favorito" (click)="toggleFavorito()" title="Marcar como favorito">
+          <span class="estrella" [ngClass]="{'favorito': isFavorito()}">★</span>
+        </button>
+      }
+      
+      <button class="btn-close-modal" (click)="close()">×</button>
+    </div>
     
     <!-- View Mode -->
     @if (viewMode === 'view') {
-      <div class="monsters-list">
-        @for (monsterItem of tienda.monsters; track monsterItem.monster.id) {
-          <div class="monster-item">
-            <img [src]="monsterItem.monster.imagenUrl" alt="{{ monsterItem.monster.nombre }}">
-            <div>
-              <strong>{{ monsterItem.monster.nombre }}</strong>
-              @if (monsterItem.descuento && monsterItem.precioDescuento) {
-                <div class="price-info text-center">
-                  <p>
-                    Precio original: <span class="original-price">{{ monsterItem.precio }}€</span>
-                    <br>
-                    Precio oferta: <span class="discount-price-yellow">{{ monsterItem.precioDescuento }}€</span>
-                  </p>
-                  <div class="badge-container">
-                    <span class="discount-badge">¡EN OFERTA!</span>
-                    @if (monsterItem.enNevera) {
-                      <span class="badge-nevera bg-primary text-white">¡EN NEVERA!</span>
-                    }
-                  </div>
-                </div>
-              } @else {
-                <div class="price-info text-center">
-                  <p>Precio: {{ monsterItem.precio }}€</p>
+      @if (tienda.monsters.length === 0) {
+        <div class="empty-monsters-message">
+          <div class="empty-state">
+            <img src="assets/monsterconducir.png" alt="Monster Energy" class="empty-icon">
+            <h3>¡Esta tienda no tiene productos!</h3>
+            <p>Sé el primero en añadir una bebida a esta tienda</p>
+            <button class="btn-action edit" (click)="switchToEditMode()">
+              <span class="icon">✏️</span> Añadir Bebidas
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="monsters-list">
+          @for (monsterItem of tienda.monsters; track monsterItem.monster.id) {
+            <div class="monster-item">
+              <div class="monster-image-container">
+                <img [src]="monsterItem.monster.imagenUrl" alt="{{ monsterItem.monster.nombre }}">
+              </div>
+              <div class="monster-info">
+                <h3>{{ monsterItem.monster.nombre }}</h3>
+                
+                <div class="badge-container">
                   @if (monsterItem.enNevera) {
-                    <div class="badge-container">
-                      <span class="badge-nevera bg-primary text-white">¡EN NEVERA!</span>
-                    </div>
+                    <span class="badge-nevera">EN NEVERA</span>
+                  }
+                  @if (monsterItem.descuento && monsterItem.precioDescuento) {
+                    <span class="badge-oferta">OFERTA</span>
                   }
                 </div>
-              }
-              
+                
+                @if (monsterItem.descuento && monsterItem.precioDescuento) {
+                  <div class="price-info">
+                    <div class="price-original">{{ monsterItem.precio }}€</div>
+                    <div class="price-discount">{{ monsterItem.precioDescuento }}€</div>
+                  </div>
+                } @else {
+                  <div class="price-info">
+                    <div class="price-regular">{{ monsterItem.precio }}€</div>
+                  </div>
+                }
+              </div>
             </div>
-          </div>
-        }
-      </div>
-      <div class="actions">
-        <button class="btn btn-warning m-2" (click)="switchToEditMode()">Editar Monsters</button>
-        <button class="btn btn-warning m-2" (click)="switchToWatchMode()">Ver Monsters</button>
-        <button class="btn btn-primary m-2" (click)="close()">Cerrar</button>
-      </div>
+          }
+        </div>
+        <div class="actions">
+          <button class="btn-action edit" (click)="switchToEditMode()">
+            <span class="icon">✏️</span> Editar
+          </button>
+          <button class="btn-action view" (click)="switchToWatchMode()">
+            <span class="icon">👁️</span> Ver Detalles
+          </button>
+        </div>
+      }
     }
     
     <!-- Edit Mode -->
@@ -54,9 +78,13 @@
             <input 
               type="checkbox" 
               [formControl]="getMonsterControl(monster)"
+              id="monster_{{monster.id}}"
+              class="monster-checkbox"
             >
-            <img [src]="monster.imagenUrl" alt="{{ monster.nombre }}">
-            <span>{{ monster.nombre }}</span>
+            <label for="monster_{{monster.id}}" class="monster-checkbox-label">
+              <img [src]="monster.imagenUrl" alt="{{ monster.nombre }}">
+              <span class="monster-name">{{ monster.nombre }}</span>
+            </label>
             
             @if (getMonsterControl(monster).value) {
               <div class="price-controls">
@@ -121,47 +149,79 @@
           </div>
         }
         <div class="edit-actions">
-          <button class="btn btn-secondary" (click)="saveMonsters()">Guardar</button>
-          <button class="btn btn-secondary m-2" (click)="cancelEdit()">Cancelar</button>
+          <button class="btn-action save" (click)="saveMonsters()">
+            <span class="icon">💾</span> Guardar
+          </button>
+          <button class="btn-action cancel" (click)="cancelEdit()">
+            <span class="icon">❌</span> Cancelar
+          </button>
         </div>
       </form>
     }
     
     <!-- Watch Mode-->
     @if(viewMode === 'watch') {
-      <div>
-        <h3>Estos son los monster energy en {{ tienda.nombre }}</h3>
-        <div class="row">
-          @for (monsterItem of tienda.monsters; track monsterItem.monster.id) {
-            <div class="col-md-4 mb-3">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">{{ monsterItem.monster.nombre}}</h5>
-                  <p class="card-text">Sabor: {{ monsterItem.monster.sabor}}</p>
+      <div class="watch-mode-container">
+        <h3>Todos los Monster Energy disponibles en {{ tienda.nombre }}</h3>
+        
+        @if (tienda.monsters.length === 0) {
+          <div class="empty-state">
+            <img src="assets/monsterconducir.png" alt="Monster Energy" class="empty-icon">
+            <h3>¡Esta tienda no tiene productos!</h3>
+            <p>Sé el primero en añadir una bebida a esta tienda</p>
+            <button class="btn-action edit" (click)="switchToEditMode()">
+              <span class="icon">✏️</span> Añadir Bebidas
+            </button>
+          </div>
+        } @else {
+          <div class="monster-cards">
+            @for (monsterItem of tienda.monsters; track monsterItem.monster.id) {
+              <div class="monster-card">
+                <div class="card-image">
+                  <img [src]="monsterItem.monster.imagenUrl" alt="{{ monsterItem.monster.nombre }}">
+                </div>
+                <div class="card-content">
+                  <h4>{{ monsterItem.monster.nombre }}</h4>
+                  
+                  <div class="badge-container">
+                    @if (monsterItem.enNevera) {
+                      <span class="badge-nevera">EN NEVERA</span>
+                    }
+                    @if (monsterItem.descuento && monsterItem.precioDescuento) {
+                      <span class="badge-oferta">OFERTA</span>
+                    }
+                  </div>
                   
                   @if (monsterItem.descuento && monsterItem.precioDescuento) {
-                    <p class="card-text">
-                      Precio original: <span class="text-muted text-decoration-line-through">{{monsterItem.precio}}€</span>
-                      <br>
-                      Precio oferta: <span class="text-warning fw-bold">{{monsterItem.precioDescuento}}€</span>
-                      <span class="badge bg-warning text-dark ms-2">OFERTA</span>
-                    </p>
+                    <div class="price-container">
+                      <span class="original-price">{{monsterItem.precio}}€</span>
+                      <span class="discount-price">{{monsterItem.precioDescuento}}€</span>
+                    </div>
                   } @else {
-                    <p class="card-text">Precio: <strong>{{monsterItem.precio}}€</strong></p>
+                    <div class="price-container">
+                      <span class="regular-price">{{monsterItem.precio}}€</span>
+                    </div>
                   }
-                  @if (monsterItem.enNevera) {
-                    <span class="badge bg-primary text-white ms-2">EN NEVERA</span>
+                  
+                  @if (monsterItem.monster.descripcion) {
+                    <p class="monster-description">{{ monsterItem.monster.descripcion }}</p>
                   }
-                  <p class="card-text">{{ monsterItem.monster.descripcion}}</p>
                 </div>
               </div>
-            </div>
-          }
-        </div>
-        <div class="mt-3">  
-          <button class="btn btn-secondary me-2" (click)="switchToEditMode()">Editar Monster</button>
-          <button class="btn btn-secondary me-2" (click)="viewMode = 'view'">Vista Simple</button>
-          <button class="btn btn-danger" (click)="close()">Cerrar</button>
+            }
+          </div>
+        }
+        
+        <div class="watch-actions">  
+          <button class="btn-action edit" (click)="switchToEditMode()">
+            <span class="icon">✏️</span> Editar
+          </button>
+          <button class="btn-action view" (click)="viewMode = 'view'">
+            <span class="icon">🔍</span> Vista Simple
+          </button>
+          <button class="btn-action close" (click)="close()">
+            <span class="icon">❌</span> Cerrar
+          </button>
         </div>
       </div>
     }

@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { Injectable } from '@angular/core';
 import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
 import { ITienda } from '../interfaces/itienda';
-import { environment } from './environment.prod';
+import { environment } from '../environment/environment.prod';
 
 @Injectable({
   providedIn: 'root'

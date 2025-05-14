@@ -315,3 +315,104 @@
     padding: 8px 12px;
   }
 }
+
+@media (max-width: 576px) {
+  .filter-container {
+    position: absolute;
+    top: auto;
+    bottom: 70px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    z-index: 1000;
+  }
+  
+  .monster-filter-button {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+  
+  .monster-filter-button i {
+    font-size: 14px;
+  }
+  
+  .filter-panel {
+    padding: 12px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  .filter-header h3 {
+    font-size: 16px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+  }
+  
+  .form-control {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  
+  .btn-primary {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .results-panel {
+    position: fixed;
+    top: 50%;
+    left: 10px;
+    right: 10px;
+    transform: translateY(-50%);
+    width: auto;
+    max-height: 60vh;
+    z-index: 1100;
+  }
+  
+  .monster-card {
+    padding: 10px;
+  }
+  
+  .card-header h5 {
+    font-size: 15px;
+  }
+  
+  .price {
+    font-size: 16px;
+  }
+  
+  .store, .distancia {
+    font-size: 12px;
+  }
+}
+
+/* Tablets */
+@media (min-width: 577px) and (max-width: 768px) {
+  .filter-container {
+    width: 280px;
+    right: 15px;
+  }
+  
+  .results-panel {
+    max-height: 50vh;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-height: 500px) and (orientation: landscape) {
+  .filter-container {
+    top: 10px;
+    right: 10px;
+    max-width: 200px;
+  }
+  
+  .filter-panel, .results-panel {
+    max-height: 80vh;
+  }
+}

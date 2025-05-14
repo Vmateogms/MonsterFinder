@@ -6,6 +6,9 @@ import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } 
 import { MonsterService } from '../../services/monster.service';
 import { TiendaMonsterService } from '../../services/tienda-monster.service';
 import { TiendaService } from '../../services/tienda.service';
+import { AuthService } from '../../services/auth.service';
+import { HttpHeaders } from '@angular/common/http';
+import { environment } from '../../environment/environment.prod';
 
 @Component({
   selector: 'app-tienda-detail',
@@ -27,7 +30,8 @@ export class TiendaDetailComponent implements OnInit {
     private monsterService: MonsterService,
     private tiendaMonsterService: TiendaMonsterService,
     private tiendaService: TiendaService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    public authService: AuthService // Hacerlo público para usarlo en el template
   ) {}
 
   ngOnInit() {
@@ -207,7 +211,6 @@ export class TiendaDetailComponent implements OnInit {
         
         const descuento = this.getDiscountControl(monster)?.value || false;
         
-        //el problema esta aqui
         let precioDescuento: number | null = null;
         if (descuento) {
           const discountPriceValue = this.getDiscountPriceControl(monster)?.value;
@@ -217,31 +220,44 @@ export class TiendaDetailComponent implements OnInit {
         }
 
         const enNevera = this.getNeveraControl(monster)?.value || false;
-
-
-        // if (descuento) {
-        //   const discountPriceValue = this.getDiscountPriceControl(monster)?.value;
-        //   precioDescuento = discountPriceValue !== null && discountPriceValue !== undefined ?
-        //             Number(discountPriceValue) : null; 
-        // }
                       
         return {
           monsterId: monster.id,
           precio: precio,
           descuento: descuento,
-          precioDescuento: precioDescuento ,
+          precioDescuento: precioDescuento,
           enNevera: enNevera
         };
       });
-      console.log('Updates completos antes de enviar:', JSON.stringify(updates));
     
-  
+    console.log('Updates completos antes de enviar:', JSON.stringify(updates));
+    
     // verificar que hay datos a enviar
     if (updates.length === 0) {
       console.log('No hay monsters seleccionados para actualizar');
       this.viewMode = 'view';
       return;
     }
+    
+    // Determinar si se están añadiendo productos nuevos o actualizando existentes
+    const tiendaActual = this.tienda;
+    const monstersActuales = tiendaActual.monsters || [];
+    const monstersActualesIds = monstersActuales.map((m: any) => m.monster.id);
+    
+    // Encontrar productos nuevos añadidos (no existían antes)
+    const productosNuevos = updates.filter(update => 
+      !monstersActualesIds.includes(update.monsterId)
+    );
+    
+    // Encontrar productos cuyo precio ha cambiado (existían antes)
+    const productosActualizados = updates.filter(update => {
+      const monsterExistente = monstersActuales.find((m: any) => m.monster.id === update.monsterId);
+      return monsterExistente && 
+             (monsterExistente.precio !== update.precio || 
+              monsterExistente.descuento !== update.descuento ||
+              monsterExistente.precioDescuento !== update.precioDescuento ||
+              monsterExistente.enNevera !== update.enNevera);
+    });
   
     // enviar actualización al backend
     this.tiendaMonsterService.updateTiendaMonsters(this.tienda.id, updates)
@@ -252,6 +268,29 @@ export class TiendaDetailComponent implements OnInit {
           this.viewMode = 'view';
           this.reloadTiendaData(); // forzar recarga
           console.log('Actualizado correctamente');
+
+          // Solicitar recompensas si el usuario está autenticado
+          if (this.authService.isLoggedIn) {
+            // Primero procesamos nuevos productos
+            if (productosNuevos.length > 0) {
+              console.log(`${productosNuevos.length} productos nuevos añadidos`);
+              this.solicitarRecompensaExperiencia(this.tienda.id, 'AÑADIR_PRODUCTO', 300 * productosNuevos.length)
+                .then(() => {
+                  this.mostrarNotificacionExperiencia(300 * productosNuevos.length, 'añadir productos');
+                });
+            }
+            
+            // Luego procesamos actualizaciones de precio
+            if (productosActualizados.length > 0) {
+              console.log(`${productosActualizados.length} productos actualizados`);
+              this.solicitarRecompensaExperiencia(this.tienda.id, 'ACTUALIZACION_PRECIO', 200 * productosActualizados.length)
+                .then(() => {
+                  if (productosNuevos.length === 0) { // Si ya mostramos notificación para nuevos productos, no mostramos otra
+                    this.mostrarNotificacionExperiencia(200 * productosActualizados.length, 'actualizar precios');
+                  }
+                });
+            }
+          }
         },
         error: (err) => {
           console.error('Error completo:', err);
@@ -268,6 +307,152 @@ export class TiendaDetailComponent implements OnInit {
           alert('Error al guardar: ' + errorMessage);
         }
       });
+  }
+
+  // Método para solicitar explícitamente la recompensa
+  private solicitarRecompensaExperiencia(tiendaId: number, accion: string, experiencia: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const url = `${environment.apiUrl}/usuarios/recompensa`;
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      });
+      
+      const payload = {
+        accion: accion,
+        tiendaId: tiendaId,
+        experiencia: experiencia
+      };
+      
+      console.log(`🏆 Solicitando recompensa de experiencia (${accion}):`, payload);
+      
+      this.authService['http'].post(url, payload, { headers }).subscribe({
+        next: (response: any) => {
+          console.log('✅ Recompensa procesada:', response);
+          
+          // Actualizar el perfil para reflejar los cambios de experiencia
+          this.authService.obtenerPerfil().subscribe({
+            next: (usuario) => {
+              console.log('Perfil actualizado después de recompensa:', usuario);
+            }
+          });
+          
+          resolve();
+        },
+        error: (error: any) => {
+          console.error('❌ Error al procesar recompensa:', error);
+          // Resolvemos de todas formas para continuar el flujo
+          resolve();
+        }
+      });
+    });
+  }
+  
+  // Método para mostrar una notificación de experiencia ganada
+  private mostrarNotificacionExperiencia(xp: number, accion: string): void {
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    notification.className = 'xp-notification';
+    notification.innerHTML = `
+      <div class="xp-notification-content">
+        <img src="assets/monsterconducir.png" alt="Monster" class="xp-icon">
+        <div class="xp-text">
+          <span class="xp-title">¡Experiencia ganada!</span>
+          <span class="xp-value">+${xp} XP por ${accion}</span>
+        </div>
+      </div>
+    `;
+    
+    // Añadir estilos inline para la notificación
+    notification.style.position = 'fixed';
+    notification.style.bottom = '20px';
+    notification.style.right = '20px';
+    notification.style.backgroundColor = '#4CAF50';
+    notification.style.color = 'white';
+    notification.style.padding = '10px 15px';
+    notification.style.borderRadius = '10px';
+    notification.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
+    notification.style.zIndex = '2000';
+    notification.style.display = 'flex';
+    notification.style.alignItems = 'center';
+    notification.style.animation = 'slideIn 0.5s forwards, fadeOut 0.5s 3.5s forwards';
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(50px)';
+    
+    // Crear estilos para la animación
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(50px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(50px); }
+      }
+      .xp-notification-content {
+        display: flex;
+        align-items: center;
+      }
+      .xp-icon {
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+      }
+      .xp-text {
+        display: flex;
+        flex-direction: column;
+      }
+      .xp-title {
+        font-weight: bold;
+        margin-bottom: 2px;
+      }
+      .xp-value {
+        font-size: 14px;
+      }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(notification);
+    
+    // Eliminar la notificación después de 4 segundos
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 4000);
+  }
+
+  toggleFavorito(): void {
+    if(!this.authService.isLoggedIn){
+      alert('Debes iniciar sesion para agregar favoritos');
+      return;
+    }
+
+    const tiendaId = this.tienda.id;
+    const esFavorita = (this.tienda as any).esFavorita;
+
+
+    if(esFavorita) {
+      this.authService.eliminarFavorito(tiendaId).subscribe({
+        next: () => {
+          (this.tienda as any).esFavorita = false;
+        },
+        error: (err) => {
+          console.error('Error al eliminar favorito' , err);
+          alert('Error al eliminar de favoritos');
+        }
+      });
+    } else {
+      this.authService.agregarFavorito(tiendaId).subscribe({
+        next: () => {
+          (this.tienda as any).esFavorita = true;
+        },
+        error: (err) => {
+          console.error('Error al agregar a favoritos', err);
+          alert('Error al agregar a favoritos');
+        }
+      });
+    }
+
   }
 
   // cambiar a modo edicion
@@ -311,5 +496,13 @@ export class TiendaDetailComponent implements OnInit {
         console.error('Error al cargar los datos de la tienda', err);
       }
     });
+  }
+
+  // Método para verificar si la tienda es favorita
+  isFavorito(): boolean {
+    if (!this.tienda) return false;
+    // Usamos tipo indexado y verificamos que sea booleano
+    const favorito = 'esFavorita' in this.tienda ? this.tienda['esFavorita'] : false;
+    return typeof favorito === 'boolean' ? favorito : false;
   }
 }

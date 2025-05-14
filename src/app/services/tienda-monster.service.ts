@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 import { ITienda } from '../interfaces/itienda';
-import { environment } from './environment.prod';
+import { environment } from '../environment/environment.prod';
 
 interface TiendaMonsterUpdate {
   monsterId: number;

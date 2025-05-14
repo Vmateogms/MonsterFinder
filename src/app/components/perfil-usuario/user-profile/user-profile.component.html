@@ -1,0 +1,115 @@
+@if (usuario) {
+    <button (click)="abrirPerfil()" class="btn-user-profile">
+      <span class="user-level">{{ usuario.nivel }}</span>
+      <span class="user-name">{{ usuario.username }}</span>
+    </button>
+  
+    @if (mostrarPerfil) {
+      <div class="profile-modal-overlay" (click)="cerrarPerfil()" (mousedown)="$event.stopPropagation()" (mousemove)="$event.stopPropagation()" style="pointer-events: all; z-index: 2000;">
+        <div class="profile-modal-content" (click)="$event.stopPropagation()" style="pointer-events: all;">
+          <div class="profile-header">
+            <div class="profile-header-content">
+              <div class="profile-avatar">
+                <div class="monster-logo">
+                  <img src="assets/monsterconducir.png" alt="Monster Energy" class="monster-icon">
+                </div>
+                <div class="level-badge">{{ usuario.nivel }}</div>
+              </div>
+              <div class="profile-user-details">
+                <h2>{{ usuario.username }}</h2>
+                <p class="user-email">{{ usuario.email }}</p>
+                @if (usuario.nombreCompleto) {
+                  <p class="user-fullname">{{ usuario.nombreCompleto }}</p>
+                }
+              </div>
+            </div>
+            <button class="btn-close" (click)="cerrarPerfil()">×</button>
+          </div>
+          
+          @if (errorMensaje) {
+            <div class="error-message-container">
+              <div class="alert alert-danger">
+                <i class="alert-icon">⚠️</i>
+                {{ errorMensaje }}
+              </div>
+            </div>
+          }
+          
+          <div class="level-progress-container">
+            <div class="level-info">
+              <h3>Nivel {{ usuario?.nivel }}</h3>
+              <div class="progress-container">
+                <div class="progress-bar" [style.width.%]="calcularPorcentajeNivel()"></div>
+                <span class="progress-text">{{ calcularPorcentajeNivel() }}%</span>
+              </div>
+              <div class="xp-remaining">
+                {{ usuario?.experiencia | number }} XP / {{ calcularXpSiguienteNivel() | number }} XP para nivel {{ (usuario?.nivel ?? 0) + 1 }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="stats-container">
+            <div class="stat-card">
+              <div class="stat-icon">🏆</div>
+              <div class="stat-value">{{ usuario.nivel }}</div>
+              <div class="stat-label">Nivel</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">⭐</div>
+              <div class="stat-value">{{ usuario.experiencia }}</div>
+              <div class="stat-label">Experiencia</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">🔍</div>
+              <div class="stat-value">{{ usuario.nivelConfianza }}</div>
+              <div class="stat-label">Confianza</div>
+            </div>
+          </div>
+          
+          <div class="section-container favorites-section">
+            <div class="section-header">
+              <h3>
+                <i class="section-icon">❤️</i>
+                Tiendas Favoritas
+              </h3>
+            </div>
+            
+            @if (isLoading) {
+              <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Cargando tus favoritos...</p>
+              </div>
+            } @else if (favoritos.length === 0) {
+              <div class="empty-state">
+                <div class="empty-icon">📌</div>
+                <p>No tienes tiendas favoritas todavía</p>
+                <small>Marca tus tiendas favoritas para verlas aquí</small>
+              </div>
+            } @else {
+              <div class="favorites-list">
+                @for (favorito of favoritos; track favorito.id) {
+                  <div class="favorite-item">
+                    <div class="favorite-info">
+                      <i class="store-icon">🏪</i>
+                      <span class="favorite-name">{{ favorito.nombre }}</span>
+                    </div>
+                    <button class="btn-map-locate" (click)="ubicarTiendaEnMapa(favorito)">
+                      <i class="locate-icon">📍</i>
+                      Ubicar
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          
+          <div class="profile-actions">
+            <button (click)="logout()" class="btn-logout" [disabled]="isLoading">
+              <i class="btn-icon">🚪</i>
+              {{ isLoading ? 'Cerrando sesión...' : 'Cerrar Sesión' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
