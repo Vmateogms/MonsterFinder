@@ -20,4 +20,5 @@ export interface ITienda {
     precioDescuento?: number;
     enNevera?: boolean; 
     }[];
+    usuarioCreador?: string; // Nombre de usuario que creó la tienda
 }

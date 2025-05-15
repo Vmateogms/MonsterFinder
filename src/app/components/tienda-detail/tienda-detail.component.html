@@ -1,7 +1,19 @@
 <div class="modal-overlay" (mousedown)="$event.stopPropagation()" (mousemove)="$event.stopPropagation()" style="z-index: 2000;">
   <div class="modal-content" (mousedown)="$event.stopPropagation()" (mousemove)="$event.stopPropagation()">
     <div class="store-header">
-      <h2>{{ tienda.nombre }}</h2>
+      <div class="store-info">
+        <h2>{{ tienda.nombre }}</h2>
+        @if (tienda.usuarioCreador) {
+          <div class="store-creator">
+            <span class="creator-label">Añadida por:</span>
+            <span class="creator-name">{{ tienda.usuarioCreador }}</span>
+          </div>
+        } @else {
+          <div class="store-creator">
+            <span class="creator-name">Usuario desconocido</span>
+          </div>
+        }
+      </div>
       
       <!-- Botón de favoritos (estrella) -->
       @if (authService.isLoggedIn) {

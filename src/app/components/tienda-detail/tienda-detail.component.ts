@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, OnDestroy } from '@angular/core';
 import { ITienda } from '../../interfaces/itienda';
 import { CommonModule } from '@angular/common';
 import { IMonster } from '../../interfaces/imonster';
@@ -9,6 +9,7 @@ import { TiendaService } from '../../services/tienda.service';
 import { AuthService } from '../../services/auth.service';
 import { HttpHeaders } from '@angular/common/http';
 import { environment } from '../../environment/environment.prod';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-tienda-detail',
@@ -17,7 +18,7 @@ import { environment } from '../../environment/environment.prod';
   templateUrl: './tienda-detail.component.html',
   styleUrl: './tienda-detail.component.css'
 })
-export class TiendaDetailComponent implements OnInit {
+export class TiendaDetailComponent implements OnInit, OnDestroy {
   @Input() tienda!: ITienda;
   @Output() closed = new EventEmitter<void>();
 
@@ -25,6 +26,7 @@ export class TiendaDetailComponent implements OnInit {
   allMonsters: IMonster[] = [];
   monsterEditForm!: FormGroup;
   isFormSubmitted = false;
+  private xpSubscription: Subscription | null = null;
   
   constructor(
     private monsterService: MonsterService,
@@ -35,16 +37,27 @@ export class TiendaDetailComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // fetch todos los monters disponibles
-    this.monsterService.getAllMonsters().subscribe({
-      next: (monsters) => {
-        this.allMonsters = monsters;
-        this.initForm();
-      },
-      error: (err) => {
-        console.error('Error fetching monsters', err);
+    console.log('TiendaDetailComponent inicializado con tienda:', this.tienda);
+    
+    // Cargar todos los monsters disponibles
+    this.monsterService.getAllMonsters().subscribe(monsters => {
+      this.allMonsters = monsters;
+      this.initForm();
+    });
+
+    // Suscribirse a notificaciones de XP
+    this.xpSubscription = this.tiendaService.xpNotification$.subscribe(notification => {
+      if (notification) {
+        this.mostrarNotificacionExperiencia(notification.xpGanada, notification.mensaje);
       }
     });
+  }
+
+  ngOnDestroy() {
+    // Cancelar suscripciones para evitar memory leaks
+    if (this.xpSubscription) {
+      this.xpSubscription.unsubscribe();
+    }
   }
 
   initForm() {
@@ -189,38 +202,28 @@ export class TiendaDetailComponent implements OnInit {
 
   // Guardar los monstersa actualizados para la tienda
   saveMonsters() {
-    // Validar el formulario
-    if (this.monsterEditForm.invalid) {
-      Object.keys(this.monsterEditForm.controls).forEach(key => {
-        const control = this.monsterEditForm.get(key);
-        control?.markAsTouched();
-      });
+    if (!this.authService.isLoggedIn) {
+      alert('Debes iniciar sesión para editar la tienda.');
       return;
     }
-  
-    // Filtrar monsters seleccionados y asegurar que los datos son válidos
-    const updates = this.allMonsters
-      .filter(monster => {
-        const control = this.getMonsterControl(monster);
-        return control && control.value === true;
-      })
+    
+    this.isFormSubmitted = true;
+    
+    // Validar el formulario
+    if (this.monsterEditForm.invalid) {
+      console.error('Formulario inválido');
+      return;
+    }
+    
+    // Obtener monsters seleccionados y sus precios
+    const monsterUpdates = this.allMonsters
+      .filter(monster => this.getMonsterControl(monster).value)
       .map(monster => {
-        const priceValue = this.getPriceControl(monster)?.value;
-        const precio = priceValue !== null && priceValue !== undefined ? 
-                      Number(priceValue) : 0;
+        const precio = this.getPriceControl(monster).value;
+        const descuento = this.getDiscountControl(monster).value;
+        const precioDescuento = descuento ? this.getDiscountPriceControl(monster).value : null;
+        const enNevera = this.getNeveraControl(monster).value;
         
-        const descuento = this.getDiscountControl(monster)?.value || false;
-        
-        let precioDescuento: number | null = null;
-        if (descuento) {
-          const discountPriceValue = this.getDiscountPriceControl(monster)?.value;
-          if (discountPriceValue !== null && discountPriceValue !== undefined) {
-            precioDescuento = Number(discountPriceValue);
-          }
-        }
-
-        const enNevera = this.getNeveraControl(monster)?.value || false;
-                      
         return {
           monsterId: monster.id,
           precio: precio,
@@ -230,195 +233,25 @@ export class TiendaDetailComponent implements OnInit {
         };
       });
     
-    console.log('Updates completos antes de enviar:', JSON.stringify(updates));
-    
-    // verificar que hay datos a enviar
-    if (updates.length === 0) {
-      console.log('No hay monsters seleccionados para actualizar');
-      this.viewMode = 'view';
+    if (monsterUpdates.length === 0) {
+      alert('Debes seleccionar al menos un producto.');
       return;
     }
     
-    // Determinar si se están añadiendo productos nuevos o actualizando existentes
-    const tiendaActual = this.tienda;
-    const monstersActuales = tiendaActual.monsters || [];
-    const monstersActualesIds = monstersActuales.map((m: any) => m.monster.id);
+    console.log('Actualizando productos:', monsterUpdates);
     
-    // Encontrar productos nuevos añadidos (no existían antes)
-    const productosNuevos = updates.filter(update => 
-      !monstersActualesIds.includes(update.monsterId)
-    );
-    
-    // Encontrar productos cuyo precio ha cambiado (existían antes)
-    const productosActualizados = updates.filter(update => {
-      const monsterExistente = monstersActuales.find((m: any) => m.monster.id === update.monsterId);
-      return monsterExistente && 
-             (monsterExistente.precio !== update.precio || 
-              monsterExistente.descuento !== update.descuento ||
-              monsterExistente.precioDescuento !== update.precioDescuento ||
-              monsterExistente.enNevera !== update.enNevera);
+    // Usar el método actualizado en tiendaService
+    this.tiendaService.updateTiendaMonsters(this.tienda.id, monsterUpdates).subscribe({
+      next: (tiendaActualizada) => {
+        console.log('Tienda actualizada correctamente:', tiendaActualizada);
+        this.tienda = tiendaActualizada;
+        this.viewMode = 'view';
+      },
+      error: (error) => {
+        console.error('Error al actualizar tienda:', error);
+        alert(`Error: ${error.message}`);
+      }
     });
-  
-    // enviar actualización al backend
-    this.tiendaMonsterService.updateTiendaMonsters(this.tienda.id, updates)
-      .subscribe({
-        next: (updatedTienda) => {
-          console.log('Tienda actualizada recibida del servidor:', JSON.stringify(updatedTienda));
-          this.tienda = updatedTienda || this.tienda;
-          this.viewMode = 'view';
-          this.reloadTiendaData(); // forzar recarga
-          console.log('Actualizado correctamente');
-
-          // Solicitar recompensas si el usuario está autenticado
-          if (this.authService.isLoggedIn) {
-            // Primero procesamos nuevos productos
-            if (productosNuevos.length > 0) {
-              console.log(`${productosNuevos.length} productos nuevos añadidos`);
-              this.solicitarRecompensaExperiencia(this.tienda.id, 'AÑADIR_PRODUCTO', 300 * productosNuevos.length)
-                .then(() => {
-                  this.mostrarNotificacionExperiencia(300 * productosNuevos.length, 'añadir productos');
-                });
-            }
-            
-            // Luego procesamos actualizaciones de precio
-            if (productosActualizados.length > 0) {
-              console.log(`${productosActualizados.length} productos actualizados`);
-              this.solicitarRecompensaExperiencia(this.tienda.id, 'ACTUALIZACION_PRECIO', 200 * productosActualizados.length)
-                .then(() => {
-                  if (productosNuevos.length === 0) { // Si ya mostramos notificación para nuevos productos, no mostramos otra
-                    this.mostrarNotificacionExperiencia(200 * productosActualizados.length, 'actualizar precios');
-                  }
-                });
-            }
-          }
-        },
-        error: (err) => {
-          console.error('Error completo:', err);
-          let errorMessage = 'Error desconocido';
-          
-          if (err.error && typeof err.error === 'object') {
-            errorMessage = err.error.message || JSON.stringify(err.error);
-          } else if (typeof err.error === 'string') {
-            errorMessage = err.error;
-          } else if (err.message) {
-            errorMessage = err.message;
-          }
-          
-          alert('Error al guardar: ' + errorMessage);
-        }
-      });
-  }
-
-  // Método para solicitar explícitamente la recompensa
-  private solicitarRecompensaExperiencia(tiendaId: number, accion: string, experiencia: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const url = `${environment.apiUrl}/usuarios/recompensa`;
-      const headers = new HttpHeaders({
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      });
-      
-      const payload = {
-        accion: accion,
-        tiendaId: tiendaId,
-        experiencia: experiencia
-      };
-      
-      console.log(`🏆 Solicitando recompensa de experiencia (${accion}):`, payload);
-      
-      this.authService['http'].post(url, payload, { headers }).subscribe({
-        next: (response: any) => {
-          console.log('✅ Recompensa procesada:', response);
-          
-          // Actualizar el perfil para reflejar los cambios de experiencia
-          this.authService.obtenerPerfil().subscribe({
-            next: (usuario) => {
-              console.log('Perfil actualizado después de recompensa:', usuario);
-            }
-          });
-          
-          resolve();
-        },
-        error: (error: any) => {
-          console.error('❌ Error al procesar recompensa:', error);
-          // Resolvemos de todas formas para continuar el flujo
-          resolve();
-        }
-      });
-    });
-  }
-  
-  // Método para mostrar una notificación de experiencia ganada
-  private mostrarNotificacionExperiencia(xp: number, accion: string): void {
-    // Crear elemento de notificación
-    const notification = document.createElement('div');
-    notification.className = 'xp-notification';
-    notification.innerHTML = `
-      <div class="xp-notification-content">
-        <img src="assets/monsterconducir.png" alt="Monster" class="xp-icon">
-        <div class="xp-text">
-          <span class="xp-title">¡Experiencia ganada!</span>
-          <span class="xp-value">+${xp} XP por ${accion}</span>
-        </div>
-      </div>
-    `;
-    
-    // Añadir estilos inline para la notificación
-    notification.style.position = 'fixed';
-    notification.style.bottom = '20px';
-    notification.style.right = '20px';
-    notification.style.backgroundColor = '#4CAF50';
-    notification.style.color = 'white';
-    notification.style.padding = '10px 15px';
-    notification.style.borderRadius = '10px';
-    notification.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
-    notification.style.zIndex = '2000';
-    notification.style.display = 'flex';
-    notification.style.alignItems = 'center';
-    notification.style.animation = 'slideIn 0.5s forwards, fadeOut 0.5s 3.5s forwards';
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateX(50px)';
-    
-    // Crear estilos para la animación
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn {
-        from { opacity: 0; transform: translateX(50px); }
-        to { opacity: 1; transform: translateX(0); }
-      }
-      @keyframes fadeOut {
-        from { opacity: 1; transform: translateX(0); }
-        to { opacity: 0; transform: translateX(50px); }
-      }
-      .xp-notification-content {
-        display: flex;
-        align-items: center;
-      }
-      .xp-icon {
-        width: 40px;
-        height: 40px;
-        margin-right: 10px;
-      }
-      .xp-text {
-        display: flex;
-        flex-direction: column;
-      }
-      .xp-title {
-        font-weight: bold;
-        margin-bottom: 2px;
-      }
-      .xp-value {
-        font-size: 14px;
-      }
-    `;
-    
-    document.head.appendChild(style);
-    document.body.appendChild(notification);
-    
-    // Eliminar la notificación después de 4 segundos
-    setTimeout(() => {
-      document.body.removeChild(notification);
-    }, 4000);
   }
 
   toggleFavorito(): void {
@@ -504,5 +337,92 @@ export class TiendaDetailComponent implements OnInit {
     // Usamos tipo indexado y verificamos que sea booleano
     const favorito = 'esFavorita' in this.tienda ? this.tienda['esFavorita'] : false;
     return typeof favorito === 'boolean' ? favorito : false;
+  }
+
+  // Método para mostrar notificaciones de XP
+  private mostrarNotificacionExperiencia(xp: number, mensaje: string): void {
+    // Eliminar notificación anterior si existe
+    const existingNotification = document.querySelector('.xp-notification');
+    if (existingNotification) {
+      document.body.removeChild(existingNotification);
+    }
+    
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    notification.className = 'xp-notification';
+    notification.innerHTML = `
+      <div class="xp-notification-content">
+        <img src="assets/monsterconducir.png" alt="Monster" class="xp-icon">
+        <div class="xp-text">
+          <span class="xp-title">${xp > 0 ? '¡Experiencia ganada!' : 'Límite de XP'}</span>
+          <span class="xp-message">${mensaje}</span>
+        </div>
+      </div>
+    `;
+    
+    // Añadir estilos inline para la notificación
+    notification.style.position = 'fixed';
+    notification.style.bottom = '20px';
+    notification.style.right = '20px';
+    notification.style.backgroundColor = xp > 0 ? '#4CAF50' : '#FF9800';
+    notification.style.color = 'white';
+    notification.style.padding = '15px';
+    notification.style.borderRadius = '10px';
+    notification.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
+    notification.style.zIndex = '2000';
+    notification.style.display = 'flex';
+    notification.style.alignItems = 'center';
+    notification.style.minWidth = '300px';
+    notification.style.maxWidth = '400px';
+    notification.style.animation = 'slideIn 0.5s forwards, fadeOut 0.5s 4.5s forwards';
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(50px)';
+    
+    // Crear estilos para la animación
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(50px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(50px); }
+      }
+      .xp-notification-content {
+        display: flex;
+        align-items: center;
+        width: 100%;
+      }
+      .xp-icon {
+        width: 40px;
+        height: 40px;
+        margin-right: 15px;
+      }
+      .xp-text {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+      .xp-title {
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 5px;
+      }
+      .xp-message {
+        font-size: 14px;
+        line-height: 1.4;
+      }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(notification);
+    
+    // Eliminar la notificación después de 5 segundos
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    }, 5000);
   }
 }

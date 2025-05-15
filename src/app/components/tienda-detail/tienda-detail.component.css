@@ -1100,3 +1100,28 @@
     margin-bottom: 20px;
   }
 }
+
+.store-info {
+  flex: 1;
+}
+
+.store-info h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.store-creator {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 3px;
+}
+
+.creator-label {
+  opacity: 0.8;
+  margin-right: 4px;
+}
+
+.creator-name {
+  font-weight: 500;
+}

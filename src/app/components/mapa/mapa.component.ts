@@ -5,7 +5,7 @@ import { TiendaDetailComponent } from "../tienda-detail/tienda-detail.component"
 import { LeafletModule } from '@asymmetrik/ngx-leaflet';
 import { CommonModule } from '@angular/common';
 import { TiendaService } from '../../services/tienda.service'; 
-import { catchError, of, Subscription } from 'rxjs';
+import { catchError, of, Subscription, interval, switchMap } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AddtiendaComponent } from "../addtienda/addtienda.component";
 import { CommunicationService } from '../../services/communication.service';
@@ -64,6 +64,12 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
   private filteredResultsSubscription: Subscription | null = null;
   private communicationSubscription: Subscription | null = null;
 
+  // Propiedades para el sistema de notificaciones de tiendas nuevas
+  private newStoreCheckingEnabled: boolean = true;
+  private pollingSubscription: Subscription | null = null;
+  private newStoreNotification: HTMLElement | null = null;
+  private newTiendaData: ITienda | null = null;
+
   constructor(
     private tiendaService: TiendaService,
     private fb: FormBuilder,
@@ -95,6 +101,9 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Cargar tiendas
     this.cargarTiendas();
+
+    // Iniciar sistema de polling para detectar nuevas tiendas
+    this.startPollingForNewStores();
   }
 
   ngAfterViewInit(): void {
@@ -117,6 +126,14 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.communicationSubscription) {
       this.communicationSubscription.unsubscribe();
     }
+
+    // Detener el polling de nuevas tiendas
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
+    }
+
+    // Eliminar notificación si existe
+    this.removeNewStoreNotification();
   }
 
   // METODOS DE INICIALIZACION
@@ -134,6 +151,14 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.filteredResultsSubscription = this.mService.resultadosFiltrado$.subscribe(
       results => this.handleFilteredResults(results)
     );
+
+    // Suscribirse a nuevas tiendas detectadas
+    this.tiendaService.newTienda$.subscribe(newTienda => {
+      if (newTienda) {
+        this.newTiendaData = newTienda;
+        this.showNewStoreNotification(newTienda);
+      }
+    });
   }
 
   private initMap(): void {
@@ -574,12 +599,16 @@ guardarNuevaTienda(): void {
   }
 
   // Preparar los datos de la nueva tienda
-  const newStore = {
+  const newStore: any = {
     nombre: this.nuevaTiendaNombre.trim(),
     latitud: this.posicionDeNuevaTienda.lat,
     longitud: this.posicionDeNuevaTienda.lng
   };
   
+  // Añadir usuario creador si está autenticado
+  if (this.authService.isLoggedIn && this.authService.currentUserValue) {
+    newStore.usuarioCreador = this.authService.currentUserValue.username;
+  }
   
   // Enviar a la API
   this.tiendaService.addTienda(newStore).subscribe({
@@ -609,25 +638,9 @@ guardarNuevaTienda(): void {
         this.map.getContainer().style.cursor = '';
       }
       
-      // Actualizar el perfil del usuario si está autenticado para obtener la experiencia ganada
-      if (this.authService.isLoggedIn) {
-        // Primero, solicitar explícitamente la recompensa de experiencia
-        this.solicitarRecompensaExperiencia(response.id).then(() => {
-          // Luego actualizar el perfil
-          this.authService.obtenerPerfil().subscribe({
-            next: (usuario) => {
-              console.log('Perfil actualizado después de añadir tienda:', usuario);
-              // Mostrar notificación de experiencia ganada
-              this.mostrarNotificacionExperiencia();
-            },
-            error: (err) => {
-              console.error('Error al actualizar perfil:', err);
-            }
-          });
-        }).catch(error => {
-          console.error('Error al solicitar recompensa:', error);
-        });
-      }
+      // Ya no necesitamos actualizar el perfil manualmente ni solicitar recompensa
+      // El servicio TiendaService se encargará de emitir la notificación de XP
+      // cuando reciba los headers de experiencia del backend
       
       // Crear un efecto visual de marca nueva en el mapa
       if (response && response.id) {
@@ -637,6 +650,11 @@ guardarNuevaTienda(): void {
         }, 1000);
       } else {
         this.cargarTiendas();
+      }
+
+      // Notificar a través del servicio de comunicación
+      if (response && response.id) {
+        this.cservice.notifyNewTiendaAdded(response);
       }
     },
     error: (err) => {
@@ -658,37 +676,6 @@ guardarNuevaTienda(): void {
       
       alert(errorMsg);
     }
-  });
-}
-
-// Método para solicitar explícitamente la recompensa por añadir una tienda
-private solicitarRecompensaExperiencia(tiendaId: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const url = `${environment.apiUrl}/usuarios/recompensa`;
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    });
-    
-    const payload = {
-      accion: 'AÑADIR_TIENDA',
-      tiendaId: tiendaId,
-      experiencia: 1000
-    };
-    
-    console.log('🏆 Solicitando recompensa de experiencia:', payload);
-    
-    this.authService['http'].post(url, payload, { headers }).subscribe({
-      next: (response: any) => {
-        console.log('✅ Recompensa procesada:', response);
-        resolve();
-      },
-      error: (error: any) => {
-        console.error('❌ Error al procesar recompensa:', error);
-        // Resolvemos de todas formas para continuar el flujo
-        resolve();
-      }
-    });
   });
 }
 
@@ -743,79 +730,6 @@ private solicitarRecompensaExperiencia(tiendaId: number): Promise<void> {
         }, 500);
       }
     }, 50);
-  }
-  
-  // Método para mostrar una notificación de experiencia ganada
-  private mostrarNotificacionExperiencia(): void {
-    // Crear elemento de notificación
-    const notification = document.createElement('div');
-    notification.className = 'xp-notification';
-    notification.innerHTML = `
-      <div class="xp-notification-content">
-        <img src="assets/monsterconducir.png" alt="Monster" class="xp-icon">
-        <div class="xp-text">
-          <span class="xp-title">¡Experiencia ganada!</span>
-          <span class="xp-value">+1000 XP</span>
-        </div>
-      </div>
-    `;
-    
-    // Añadir estilos inline para la notificación
-    notification.style.position = 'fixed';
-    notification.style.bottom = '20px';
-    notification.style.right = '20px';
-    notification.style.backgroundColor = '#4CAF50';
-    notification.style.color = 'white';
-    notification.style.padding = '10px 15px';
-    notification.style.borderRadius = '10px';
-    notification.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
-    notification.style.zIndex = '2000';
-    notification.style.display = 'flex';
-    notification.style.alignItems = 'center';
-    notification.style.animation = 'slideIn 0.5s forwards, fadeOut 0.5s 3.5s forwards';
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateX(50px)';
-    
-    // Crear estilos para la animación
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn {
-        from { opacity: 0; transform: translateX(50px); }
-        to { opacity: 1; transform: translateX(0); }
-      }
-      @keyframes fadeOut {
-        from { opacity: 1; transform: translateX(0); }
-        to { opacity: 0; transform: translateX(50px); }
-      }
-      .xp-notification-content {
-        display: flex;
-        align-items: center;
-      }
-      .xp-icon {
-        width: 40px;
-        height: 40px;
-        margin-right: 10px;
-      }
-      .xp-text {
-        display: flex;
-        flex-direction: column;
-      }
-      .xp-title {
-        font-weight: bold;
-        margin-bottom: 2px;
-      }
-      .xp-value {
-        font-size: 14px;
-      }
-    `;
-    
-    document.head.appendChild(style);
-    document.body.appendChild(notification);
-    
-    // Eliminar la notificación después de 4 segundos
-    setTimeout(() => {
-      document.body.removeChild(notification);
-    }, 4000);
   }
 
   showTiendaInfo(tienda: ITienda): void {
@@ -1174,5 +1088,110 @@ private solicitarRecompensaExperiencia(tiendaId: number): Promise<void> {
         }
       }
     }, 100);  // Un pequeño retraso para asegurar que el DOM esta listo
+  }
+
+  // Sistema de polling para detectar nuevas tiendas
+  private startPollingForNewStores(): void {
+    // Comprobar cada 30 segundos si hay tiendas nuevas
+    const POLLING_INTERVAL = 30000; // 30 segundos
+    
+    this.pollingSubscription = interval(POLLING_INTERVAL)
+      .pipe(
+        switchMap(() => {
+          if (this.newStoreCheckingEnabled) {
+            console.log('Comprobando si hay tiendas nuevas...');
+            return this.tiendaService.checkForNewTiendas();
+          }
+          return of([]);
+        })
+      )
+      .subscribe({
+        next: (newTiendas) => {
+          if (newTiendas.length > 0) {
+            console.log(`Se han detectado ${newTiendas.length} tiendas nuevas`);
+            // No necesitamos hacer nada más aquí, ya que la notificación
+            // se maneja a través de la suscripción a newTienda$
+          }
+        },
+        error: (error) => {
+          console.error('Error al comprobar nuevas tiendas:', error);
+        }
+      });
+  }
+
+  // Mostrar notificación de nueva tienda
+  private showNewStoreNotification(tienda: ITienda): void {
+    // Eliminar notificación anterior si existe
+    this.removeNewStoreNotification();
+    
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    notification.className = 'new-store-notification';
+    notification.innerHTML = `
+      <div class="new-store-content">
+        <img src="assets/monsterconducir.png" alt="Monster" class="notification-icon">
+        <div class="notification-text">
+          <span class="notification-title">¡Nueva tienda añadida!</span>
+          <span class="notification-store">${tienda.nombre}</span>
+          ${tienda.usuarioCreador ? 
+            `<span class="notification-creator">por ${tienda.usuarioCreador}</span>` : 
+            ''}
+        </div>
+        <button class="notification-btn">Ver ahora</button>
+      </div>
+    `;
+    
+    // Añadir evento de clic al botón
+    const button = notification.querySelector('.notification-btn');
+    if (button) {
+      button.addEventListener('click', () => {
+        this.viewNewStore(tienda);
+      });
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Guardar referencia a la notificación
+    this.newStoreNotification = notification;
+    
+    // Añadir un botón para cerrar la notificación después de 15 segundos
+    setTimeout(() => {
+      // Solo cerrar si todavía existe
+      if (this.newStoreNotification === notification && document.body.contains(notification)) {
+        notification.style.animation = 'fadeOut 0.5s forwards';
+        setTimeout(() => {
+          this.removeNewStoreNotification();
+        }, 500);
+      }
+    }, 15000);
+  }
+
+  // Eliminar notificación de nueva tienda
+  private removeNewStoreNotification(): void {
+    if (this.newStoreNotification && document.body.contains(this.newStoreNotification)) {
+      document.body.removeChild(this.newStoreNotification);
+    }
+    this.newStoreNotification = null;
+  }
+
+  // Ver la nueva tienda
+  private viewNewStore(tienda: ITienda): void {
+    // Eliminar la notificación
+    this.removeNewStoreNotification();
+    
+    // Comprobar si se necesita recargar las tiendas
+    this.cargarTiendas();
+    
+    // Una vez cargadas, centramos y resaltamos la tienda nueva
+    setTimeout(() => {
+      // Centrar el mapa en la nueva tienda
+      this.centerMapOnStore(tienda);
+      
+      // Resaltar la tienda
+      this.highlightStore(tienda);
+      
+      // Mostrar los detalles de la tienda
+      this.showTiendaInfo(tienda);
+    }, 500);
   }
 }

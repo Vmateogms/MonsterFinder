@@ -784,3 +784,118 @@ border-radius: 2px;
   100% { transform: scale(0.8); opacity: 0.8; }
 }
 
+/* Añadir estilos para las notificaciones de nuevas tiendas */
+.new-store-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background-color: #4285F4;
+  color: white;
+  padding: 12px 15px;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  max-width: 320px;
+  animation: slideInUp 0.5s forwards;
+}
+
+.new-store-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.notification-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.notification-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.notification-title {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.notification-store {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.notification-btn {
+  margin-left: auto;
+  background-color: white;
+  color: #4285F4;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.notification-btn:hover {
+  background-color: #f0f0f0;
+}
+
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(50px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Ajustes de responsive para la notificación */
+@media (max-width: 576px) {
+  .new-store-notification {
+    left: 10px;
+    right: 10px;
+    bottom: 70px;
+    max-width: calc(100% - 20px);
+  }
+  
+  .notification-icon {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .notification-title {
+    font-size: 13px;
+  }
+  
+  .notification-store {
+    font-size: 11px;
+  }
+  
+  .notification-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
+.notification-creator {
+  font-size: 12px;
+  opacity: 0.8;
+  font-style: italic;
+  display: block;
+  margin-top: 2px;
+}
+
+@media (max-width: 576px) {
+  .notification-creator {
+    font-size: 10px;
+  }
+}
+
