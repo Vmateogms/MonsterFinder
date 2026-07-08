@@ -1,0 +1,8 @@
+# entornos
+.env
+backend/application-secrets.properties
+
+# IDE
+.idea/
+.vscode/
+*.iml
